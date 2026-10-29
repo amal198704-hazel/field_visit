@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Beneficiary Field Management</title>
+  
+  <!-- Google Material Symbols -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: #f0fdf4;
+      color: #0f172a;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 480px;
+      min-height: 100vh;
+      background-color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 0 20px rgba(0,0,0,0.06);
+    }
+
+    .app-header {
+      background-color: #ffffff;
+      border-bottom: 2px solid #e2e8f0;
+      padding: 16px 18px 12px 18px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .app-header h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #1e3a8a;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Filters Layout */
+    .filter-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Universal Search Bar */
+    .search-box {
+      display: flex;
+      align-items: center;
+      background-color: #f1f5f9;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 10px 14px;
+      gap: 10px;
+    }
+
+    .search-box:focus-within {
+      border-color: #2563eb;
+      background-color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .search-box input {
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 1.05rem;
+      width: 100%;
+      color: #0f172a;
+    }
+
+    /* Place / Area Filter Dropdown */
+    .place-filter-box {
+      display: flex;
+      align-items: center;
+      background-color: #eff6ff;
+      border: 1.5px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 4px 12px;
+      gap: 8px;
+    }
+
+    .place-filter-box .material-symbols-outlined {
+      color: #2563eb;
+      font-size: 22px;
+    }
+
+    .place-filter-box select {
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1e3a8a;
+      width: 100%;
+      padding: 8px 0;
+      cursor: pointer;
+    }
+
+    .view-content {
+      flex: 1;
+      padding: 16px 18px 95px 18px;
+      overflow-y: auto;
+    }
+
+    /* Cards */
+    .cards {
+      width: 100%;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      cursor: pointer;
+      margin-bottom: 14px;
+      transition: transform 0.1s ease;
+    }
+
+    .cards:active {
+      transform: scale(0.99);
+    }
+
+    .card-header {
+      background-color: #2563eb;
+      color: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .card-body {
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .name-action-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .name-action-row h4 {
+      color: #0f172a;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .action-buttons {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      text-decoration: none;
+      transition: background-color 0.2s ease;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-call {
+      background-color: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+    }
+
+    .btn-whatsapp {
+      background-color: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+
+    .btn-icon .material-symbols-outlined {
+      font-size: 24px;
+    }
+
+    .card-body p {
+      color: #334155;
+      font-size: 1rem;
+      line-height: 1.45;
+    }
+
+    .route-text {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #64748b;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    .route-text .material-symbols-outlined {
+      font-size: 18px;
+      color: #2563eb;
+    }
+
+    .directions {
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px dashed #cbd5e1;
+      color: #0284c7;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .directions .material-symbols-outlined {
+      font-size: 20px;
+      color: #059669;
+    }
+
+    .card-footer {
+      background-color: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    .work-info {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #1e293b;
+      font-weight: 600;
+    }
+
+    .work-info .material-symbols-outlined {
+      font-size: 18px;
+      color: #2563eb;
+    }
+
+    /* Badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .status-pending {
+      background-color: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+
+    .status-completed {
+      background-color: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+
+    /* Footer Nav */
+    .app-footer {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      max-width: 480px;
+      background: #ffffff;
+      border-top: 2px solid #e2e8f0;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      z-index: 30;
+      box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .nav-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: #64748b;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      gap: 4px;
+      flex: 1;
+      padding: 6px 0;
+    }
+
+    .nav-btn.active {
+      color: #2563eb;
+    }
+
+    .nav-btn .material-symbols-outlined {
+      font-size: 28px;
+    }
+
+    /* Details Page */
+    .full-page {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #ffffff;
+      z-index: 50;
+      display: none;
+      flex-direction: column;
+      overflow-y: auto;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .full-page.active {
+      display: flex;
+    }
+
+    .full-page-header {
+      background: #ffffff;
+      border-bottom: 2px solid #e2e8f0;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .header-action-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-btn {
+      background: #f1f5f9;
+      border: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #1e293b;
+      transition: 0.2s ease;
+    }
+
+    .header-btn.telegram {
+      background-color: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+
+    .header-btn.edit {
+      background-color: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+    }
+
+    .header-btn .material-symbols-outlined {
+      font-size: 24px;
+    }
+
+    .full-page-body {
+      padding: 22px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 12px;
+    }
+
+    .detail-item .lbl {
+      color: #64748b;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    .detail-item .val {
+      color: #0f172a;
+      font-size: 1.05rem;
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* Modal Sheet */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: flex-end;
+      z-index: 100;
+      backdrop-filter: blur(2px);
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-sheet {
+      background: #ffffff;
+      width: 100%;
+      max-width: 480px;
+      border-radius: 24px 24px 0 0;
+      padding: 24px 20px;
+      box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.12);
+      animation: slideUp 0.2s ease-out;
+      max-height: 88vh;
+      overflow-y: auto;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1.5px solid #e2e8f0;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+    }
+
+    .modal-header h3 {
+      font-size: 1.3rem;
+      color: #1e3a8a;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .form-group label {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .form-group input, 
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      color: #0f172a;
+      outline: none;
+      background-color: #f8fafc;
+      transition: border-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .form-group input:focus, 
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: #2563eb;
+      background-color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .submit-btn {
+      background-color: #059669;
+      color: #ffffff;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .gps-btn {
+      background-color: #eff6ff;
+      color: #1d4ed8;
+      border: 1.5px dashed #60a5fa;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .gps-btn.captured {
+      background-color: #ecfdf5;
+      border-color: #34d399;
+      color: #047857;
+    }
+
+    .toggle-card {
+      background-color: #ecfdf5;
+      border: 1.5px solid #a7f3d0;
+      padding: 14px 16px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      cursor: pointer;
+    }
+
+    .toggle-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toggle-info .material-symbols-outlined {
+      color: #059669;
+      font-size: 26px;
+    }
+
+    .toggle-label {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #064e3b;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #cbd5e1;
+      transition: .25s;
+      border-radius: 28px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .25s;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    }
+
+    input:checked + .slider {
+      background-color: #059669;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(22px);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      color: #ffffff;
+      padding: 10px 20px;
+      border-radius: 24px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      display: none;
+      z-index: 150;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 50px 20px;
+      color: #64748b;
+    }
+
+    .empty-state .material-symbols-outlined {
+      font-size: 54px;
+      margin-bottom: 10px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <header class="app-header">
+      <div class="header-top">
+        <h2 id="topHeaderTitle">
+          <span class="material-symbols-outlined" style="color: #2563eb;">pending_actions</span>
+          Pending Tasks
+        </h2>
+      </div>
+
+      <!-- Filters Section -->
+      <div class="filter-wrapper" id="filterWrapper">
+        <!-- Universal Search Input -->
+        <div class="search-box">
+          <span class="material-symbols-outlined" style="color: #64748b;">search</span>
+          <input type="text" id="globalSearchInput" placeholder="Search name, route, ward, file..." oninput="handleSearch(this.value)">
+        </div>
+
+        <!-- Dynamic Place / Area Filter -->
+        <div class="place-filter-box">
+          <span class="material-symbols-outlined">filter_alt</span>
+          <select id="placeFilterSelect" onchange="handlePlaceFilter(this.value)">
+            <option value="ALL">All Places / Areas</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <div class="view-content">
+      <div id="listView"></div>
+
+      <!-- Add New Form -->
+      <div id="addFormView" style="display: none;">
+        <form id="recordForm" onsubmit="handleFormSubmit(event)">
+          <div class="form-group">
+            <label>File No</label>
+            <input type="text" id="fileNo" placeholder="e.g. PNS/2026/0160" required>
+          </div>
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="name" placeholder="Applicant Name" required>
+          </div>
+          <div class="form-group">
+            <label>Address</label>
+            <textarea id="address" rows="3" placeholder="House name, street..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label>Mobile Number</label>
+            <input type="tel" id="mobile" placeholder="10-digit mobile number" required>
+          </div>
+          <div class="form-group">
+            <label>Work Type</label>
+            <input type="text" id="work" placeholder="e.g. Old Age Pension" required>
+          </div>
+          <div style="display: flex; gap: 12px;">
+            <div class="form-group" style="flex: 1;">
+              <label>Ward</label>
+              <input type="text" id="ward" placeholder="e.g. 10" required>
+            </div>
+            <div class="form-group" style="flex: 1.5;">
+              <label>Place (Include number e.g. 1 Chelachuvad)</label>
+              <input type="text" id="place" placeholder="e.g. 1 Chelachuvad" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Route / Landmark</label>
+            <input type="text" id="route" placeholder="Directions to reach house" required>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="status" required>
+              <option value="Pending">Pending</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+
+          <button type="submit" class="submit-btn">
+            <span class="material-symbols-outlined">save</span> Save Beneficiary
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Navigation Footer -->
+    <nav class="app-footer">
+      <button class="nav-btn active" id="tabPending" onclick="switchTab('Pending')">
+        <span class="material-symbols-outlined">pending_actions</span>
+        <span>Pending</span>
+      </button>
+      <button class="nav-btn" id="tabAdd" onclick="switchTab('Add')">
+        <span class="material-symbols-outlined">add_circle</span>
+        <span>Add New</span>
+      </button>
+      <button class="nav-btn" id="tabCompleted" onclick="switchTab('Completed')">
+        <span class="material-symbols-outlined">task_alt</span>
+        <span>Completed</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Full Scale Details Page -->
+  <div class="full-page" id="fullDetailsPage">
+    <div class="full-page-header">
+      <div class="header-action-group">
+        <button class="header-btn" onclick="closeDetailsPage()" title="Home">
+          <span class="material-symbols-outlined">home</span>
+        </button>
+      </div>
+
+      <div class="header-action-group">
+        <button class="header-btn telegram" onclick="copyAndShareTelegram()" title="Copy & Share to Telegram">
+          <span class="material-symbols-outlined">send</span>
+        </button>
+        <button class="header-btn edit" onclick="openEditModal()" title="Edit Details">
+          <span class="material-symbols-outlined">edit</span>
+        </button>
+      </div>
+    </div>
+    <div class="full-page-body" id="fullDetailsContent"></div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal-backdrop" id="editModal" onclick="closeEditModal(event)">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Update Field Verification</h3>
+        <button class="header-btn" style="width: 38px; height: 38px;" onclick="closeEditModalDirect()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <form id="editForm" onsubmit="handleEditSubmit(event)">
+        <label class="toggle-card" for="markCompletedToggle">
+          <div class="toggle-info">
+            <span class="material-symbols-outlined">check_circle</span>
+            <span class="toggle-label">Mark as Completed</span>
+          </div>
+          <div class="switch">
+            <input type="checkbox" id="markCompletedToggle">
+            <span class="slider"></span>
+          </div>
+        </label>
+
+        <div class="form-group">
+          <label>Eligibility Status</label>
+          <select id="editEligibility" required>
+            <option value="Eligible">Eligible</option>
+            <option value="Not Eligible">Not Eligible</option>
+            <option value="Pending Verification">Pending Verification</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Capture GPS Location</label>
+          <button type="button" class="gps-btn" id="btnCaptureGps" onclick="captureLiveLocation()">
+            <span class="material-symbols-outlined">my_location</span>
+            <span id="gpsBtnText">Capture Current Location</span>
+          </button>
+          <input type="hidden" id="capturedMapUrl">
+        </div>
+
+        <div class="form-group">
+          <label>Remarks</label>
+          <textarea id="editRemarks" rows="3" placeholder="Enter inspection notes, document remarks..." required></textarea>
+        </div>
+
+        <button type="submit" class="submit-btn">
+          <span class="material-symbols-outlined">save</span> Save & Sync to Sheet
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Message</div>
+
+  <script>
+    // നൽകിയ Apps Script Web App URL
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkGdLOJVVD1fV4y0tSh4HU1u0x-D8206Og2HNoQC6p40V3K9PzJ4DpnLbZJmsvBnwn/exec";
+
+    let records = [];
+    let currentTab = 'Pending';
+    let searchQuery = '';
+    let selectedPlace = 'ALL';
+    let selectedRecord = null;
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 2600);
+    }
+
+    window.addEventListener('DOMContentLoaded', fetchRecordsFromSheet);
+
+    async function fetchRecordsFromSheet() {
+      showToast("Syncing with Google Sheets...");
+      try {
+        const res = await fetch(SCRIPT_URL);
+        const result = await res.json();
+        if (result.success) {
+          records = result.data;
+          populatePlaceFilter();
+          renderList(currentTab);
+          showToast("Data synced successfully!");
+        }
+      } catch (e) {
+        console.error(e);
+        showToast("Offline mode / Sheet connect error");
+      }
+    }
+
+    // സ്ഥലപ്പേരുകളുടെ ഡ്രോപ്പ്ഡൗൺ തയ്യാറാക്കുന്നു
+    function populatePlaceFilter() {
+      const select = document.getElementById('placeFilterSelect');
+      const placesSet = new Set();
+
+      records.forEach(r => {
+        if (r.place && r.place.trim()) {
+          placesSet.add(r.place.trim());
+        }
+      });
+
+      // നമ്പർ ക്രമത്തിൽ സോർട്ട് ചെയ്യുന്നു
+      const sortedPlaces = Array.from(placesSet).sort((a, b) => {
+        return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+      });
+
+      select.innerHTML = '<option value="ALL">All Places / Areas</option>';
+      sortedPlaces.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p;
+        opt.innerText = p;
+        select.appendChild(opt);
+      });
+
+      select.value = selectedPlace;
+    }
+
+    function handleSearch(val) {
+      searchQuery = val.trim().toLowerCase();
+      renderList(currentTab);
+    }
+
+    function handlePlaceFilter(val) {
+      selectedPlace = val;
+      renderList(currentTab);
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.getElementById('tabPending').classList.toggle('active', tab === 'Pending');
+      document.getElementById('tabAdd').classList.toggle('active', tab === 'Add');
+      document.getElementById('tabCompleted').classList.toggle('active', tab === 'Completed');
+
+      const listView = document.getElementById('listView');
+      const addFormView = document.getElementById('addFormView');
+      const topTitle = document.getElementById('topHeaderTitle');
+      const filterWrapper = document.getElementById('filterWrapper');
+
+      if (tab === 'Add') {
+        listView.style.display = 'none';
+        addFormView.style.display = 'block';
+        filterWrapper.style.display = 'none';
+        topTitle.innerHTML = `<span class="material-symbols-outlined" style="color: #2563eb;">person_add</span> Add New Beneficiary`;
+      } else {
+        listView.style.display = 'block';
+        addFormView.style.display = 'none';
+        filterWrapper.style.display = 'flex';
+        topTitle.innerHTML = `<span class="material-symbols-outlined" style="color: #2563eb;">${tab === 'Pending' ? 'pending_actions' : 'task_alt'}</span> ${tab} Records`;
+        renderList(tab);
+      }
+    }
+
+    // കാർഡുകൾ റെൻഡർ ചെയ്യുന്നു
+    function renderList(statusFilter) {
+      const container = document.getElementById('listView');
+      container.innerHTML = '';
+
+      // 1. Status Filter
+      let filtered = records.filter(r => r.status === statusFilter);
+
+      // 2. Place / Area Filter
+      if (selectedPlace !== 'ALL') {
+        filtered = filtered.filter(r => (r.place && r.place.trim()) === selectedPlace);
+      }
+
+      // 3. Search Filter
+      if (searchQuery) {
+        filtered = filtered.filter(item => {
+          const searchable = `${item.name} ${item.fileNo} ${item.ward} ${item.place} ${item.route} ${item.address} ${item.mobile} ${item.work}`.toLowerCase();
+          return searchable.includes(searchQuery);
+        });
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <span class="material-symbols-outlined">search_off</span>
+            <p style="font-size: 1.05rem;">No matching records found.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // ഫിൽട്ടർ ചെയ്ത ആളുകളുടെ എണ്ണം കാണിക്കാൻ ഒരു ബാഡ്ജ് ഹെഡർ
+      if (selectedPlace !== 'ALL' || searchQuery) {
+        const countHeader = document.createElement('div');
+        countHeader.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 4px 6px; font-size: 0.9rem; font-weight: 600; color: #475569;";
+        countHeader.innerHTML = `
+          <span>Showing: ${selectedPlace !== 'ALL' ? selectedPlace : 'Search Results'}</span>
+          <span style="background: #e2e8f0; padding: 2px 8px; border-radius: 12px;">${filtered.length} Records</span>
+        `;
+        container.appendChild(countHeader);
+      }
+
+      // കാർഡുകൾ ലിസ്റ്റ് ചെയ്യുന്നു
+      filtered.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'cards';
+        card.onclick = () => openFullDetails(item);
+
+        card.innerHTML = `
+          <div class="card-header">
+            <span>${item.place}</span>
+            <span>Ward: ${item.ward}</span>
+          </div>
+
+          <div class="card-body">
+            <div class="name-action-row">
+              <h4>${item.name}</h4>
+              <div class="action-buttons">
+                <a href="tel:${item.mobile}" class="btn-icon btn-call" title="Call" onclick="event.stopPropagation()">
+                  <span class="material-symbols-outlined">call</span>
+                </a>
+                <a href="https://wa.me/91${item.mobile}" target="_blank" rel="noopener noreferrer" class="btn-icon btn-whatsapp" title="WhatsApp" onclick="event.stopPropagation()">
+                  <span class="material-symbols-outlined">chat</span>
+                </a>
+              </div>
+            </div>
+
+            <p>${item.address}</p>
+
+            <div class="route-text">
+              <span class="material-symbols-outlined">near_me</span>
+              <span>${item.route}</span>
+            </div>
+
+            ${item.location ? `
+              <a href="${item.location}" target="_blank" rel="noopener noreferrer" class="directions" onclick="event.stopPropagation()">
+                <span class="material-symbols-outlined">location_on</span>
+                <span>Open in Google Maps</span>
+              </a>
+            ` : ''}
+          </div>
+
+          <div class="card-footer">
+            <div class="work-info">
+              <span class="material-symbols-outlined">work</span>
+              <span>${item.work}</span>
+            </div>
+            <div class="status-badge ${item.status === 'Completed' ? 'status-completed' : 'status-pending'}">
+              <span>${item.status}</span>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+
+      const newRecord = {
+        id: "ID_" + Date.now(),
+        fileNo: document.getElementById('fileNo').value.trim(),
+        name: document.getElementById('name').value.trim(),
+        address: document.getElementById('address').value.trim(),
+        mobile: document.getElementById('mobile').value.trim(),
+        work: document.getElementById('work').value.trim(),
+        ward: document.getElementById('ward').value.trim(),
+        place: document.getElementById('place').value.trim(),
+        route: document.getElementById('route').value.trim(),
+        status: document.getElementById('status').value,
+        remarks: "Pending field verification",
+        eligibility: "Pending Verification",
+        visitDate: new Date().toISOString().split('T')[0],
+        location: ""
+      };
+
+      records.unshift(newRecord);
+      populatePlaceFilter();
+      document.getElementById('recordForm').reset();
+      switchTab(newRecord.status);
+      showToast("Saving to Google Sheets...");
+
+      try {
+        await fetch(SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({ action: "add", record: newRecord })
+        });
+        showToast(`Saved to ${newRecord.status} Sheet!`);
+      } catch (err) {
+        console.error(err);
+        showToast("Error saving to Sheets");
+      }
+    }
+
+    function openFullDetails(item) {
+      selectedRecord = item;
+      renderDetailsView();
+      document.getElementById('fullDetailsPage').classList.add('active');
+    }
+
+    function renderDetailsView() {
+      if (!selectedRecord) return;
+      const content = document.getElementById('fullDetailsContent');
+      content.innerHTML = `
+        <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 14px; padding: 18px; margin-bottom: 6px;">
+          <h2 style="font-size: 1.4rem; font-weight: 700; color: #065f46;">${selectedRecord.name}</h2>
+          <p style="color: #475569; font-size: 0.95rem; margin-top: 4px;">File: <strong>${selectedRecord.fileNo}</strong></p>
+        </div>
+
+        <div class="detail-item">
+          <span class="lbl">Work Type:</span>
+          <span class="val">${selectedRecord.work}</span>
+        </div>
+        <div class="detail-item">
+          <span class="lbl">Place / Area:</span>
+          <span class="val" style="color: #1e3a8a;">${selectedRecord.place}</span>
+        </div>
+        <div class="detail-item">
+          <span class="lbl">Ward:</span>
+          <span class="val">Ward ${selectedRecord.ward}</span>
+        </div>
+        <div class="detail-item">
+          <span class="lbl">Contact Phone:</span>
+          <span class="val">
+            <a href="tel:${selectedRecord.mobile}" style="color: #2563eb; text-decoration: none;">${selectedRecord.mobile}</a>
+          </span>
+        </div>
+        <div class="detail-item">
+          <span class="lbl">Task Status:</span>
+          <span class="val">
+            <span class="status-badge ${selectedRecord.status === 'Completed' ? 'status-completed' : 'status-pending'}">${selectedRecord.status}</span>
+          </span>
+        </div>
+        <div class="detail-item">
+          <span class="lbl">Eligibility:</span>
+          <span class="val" style="color: #059669;">${selectedRecord.eligibility}</span>
+        </div>
+        <div class="detail-item">
+          <span class="lbl">Visit Date:</span>
+          <span class="val">${selectedRecord.visitDate || 'Not Scheduled'}</span>
+        </div>
+        <div class="detail-item" style="flex-direction: column; gap: 6px;">
+          <span class="lbl">Full Address:</span>
+          <span class="val" style="text-align: left; font-weight: 500;">${selectedRecord.address}</span>
+        </div>
+        <div class="detail-item" style="flex-direction: column; gap: 6px;">
+          <span class="lbl">Route & Landmark:</span>
+          <span class="val" style="text-align: left; font-weight: 500;">${selectedRecord.route}</span>
+        </div>
+
+        ${selectedRecord.location ? `
+          <div style="margin-top: 10px;">
+            <a href="${selectedRecord.location}" target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: #eff6ff; color: #1d4ed8; border: 1.5px solid #bfdbfe; padding: 14px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 1.05rem;">
+              <span class="material-symbols-outlined" style="color: #059669;">pin_drop</span> Open in Google Maps
+            </a>
+          </div>
+        ` : ''}
+
+        <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; padding: 14px; border-radius: 12px; margin-top: 10px;">
+          <strong style="color: #1e3a8a; font-size: 0.95rem;">Remarks:</strong>
+          <p style="color: #334155; font-size: 1rem; margin-top: 6px; line-height: 1.4;">${selectedRecord.remarks}</p>
+        </div>
+      `;
+    }
+
+    function closeDetailsPage() {
+      document.getElementById('fullDetailsPage').classList.remove('active');
+      renderList(currentTab);
+    }
+
+    function openEditModal() {
+      if (!selectedRecord) return;
+      
+      document.getElementById('markCompletedToggle').checked = (selectedRecord.status === "Completed");
+      document.getElementById('editEligibility').value = selectedRecord.eligibility || "Eligible";
+      document.getElementById('editRemarks').value = selectedRecord.remarks || "";
+      document.getElementById('capturedMapUrl').value = selectedRecord.location || "";
+      
+      const gpsBtn = document.getElementById('btnCaptureGps');
+      const gpsText = document.getElementById('gpsBtnText');
+      if (selectedRecord.location) {
+        gpsBtn.classList.add('captured');
+        gpsText.innerText = "Location Attached (Click to re-capture)";
+      } else {
+        gpsBtn.classList.remove('captured');
+        gpsText.innerText = "Capture Current Location";
+      }
+
+      document.getElementById('editModal').classList.add('open');
+    }
+
+    function closeEditModalDirect() {
+      document.getElementById('editModal').classList.remove('open');
+    }
+
+    function closeEditModal(e) {
+      if (e.target.id === 'editModal') closeEditModalDirect();
+    }
+
+    function captureLiveLocation() {
+      const gpsBtn = document.getElementById('btnCaptureGps');
+      const gpsText = document.getElementById('gpsBtnText');
+
+      if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser");
+        return;
+      }
+
+      gpsText.innerText = "Fetching location...";
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          const mapUrl = `https://maps.google.com/?q=${lat},${lng}`;
+          document.getElementById('capturedMapUrl').value = mapUrl;
+          
+          gpsBtn.classList.add('captured');
+          gpsText.innerText = `Captured (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+        },
+        (error) => {
+          gpsText.innerText = "Capture Current Location";
+          alert("GPS Permission denied or unable to fetch coordinates.");
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+
+    async function handleEditSubmit(e) {
+      e.preventDefault();
+      if (!selectedRecord) return;
+
+      const isCompleted = document.getElementById('markCompletedToggle').checked;
+      const oldStatus = selectedRecord.status;
+      const newStatus = isCompleted ? "Completed" : "Pending";
+
+      selectedRecord.status = newStatus;
+      selectedRecord.eligibility = document.getElementById('editEligibility').value;
+      selectedRecord.remarks = document.getElementById('editRemarks').value.trim();
+      const loc = document.getElementById('capturedMapUrl').value;
+      if (loc) selectedRecord.location = loc;
+      selectedRecord.visitDate = new Date().toISOString().split('T')[0];
+
+      closeEditModalDirect();
+      renderDetailsView();
+      showToast(oldStatus !== newStatus ? `Moving to ${newStatus} Sheet...` : "Updating Sheet...");
+
+      try {
+        await fetch(SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({ action: "update", record: selectedRecord })
+        });
+        showToast(oldStatus !== newStatus ? `Successfully moved to ${newStatus}!` : "Updated successfully!");
+      } catch (err) {
+        console.error(err);
+        showToast("Failed to update Google Sheet");
+      }
+    }
+
+    function copyAndShareTelegram() {
+      if (!selectedRecord) return;
+
+      const formattedText = 
+`📋 *BENEFICIARY VERIFICATION*
+━━━━━━━━━━━━━━━━━━━
+👤 *Name:* ${selectedRecord.name}
+📁 *File No:* ${selectedRecord.fileNo}
+💼 *Work:* ${selectedRecord.work}
+📍 *Place:* ${selectedRecord.place} (Ward ${selectedRecord.ward})
+📞 *Mobile:* ${selectedRecord.mobile}
+🏠 *Address:* ${selectedRecord.address}
+🛣️ *Route:* ${selectedRecord.route}
+📌 *Eligibility:* ${selectedRecord.eligibility}
+⚡ *Status:* ${selectedRecord.status}
+📅 *Visit Date:* ${selectedRecord.visitDate}
+📝 *Remarks:* ${selectedRecord.remarks}
+${selectedRecord.location ? `🌐 *Location:* ${selectedRecord.location}` : ''}`;
+
+      navigator.clipboard.writeText(formattedText).then(() => {
+        showToast("Copied! Opening Telegram...");
+        setTimeout(() => {
+          const telegramUrl = `https://t.me/share/url?text=${encodeURIComponent(formattedText)}`;
+          window.open(telegramUrl, '_blank');
+        }, 500);
+      }).catch(() => {
+        const telegramUrl = `https://t.me/share/url?text=${encodeURIComponent(formattedText)}`;
+        window.open(telegramUrl, '_blank');
+      });
+    }
+  </script>
+</body>
+</html>
