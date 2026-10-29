@@ -5,14 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Beneficiary Field Management</title>
   
+  <!-- PWA Metadata -->
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="FieldApp">
+
   <!-- Google Material Symbols -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
-<!-- PWA Settings -->
-<link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#2563eb">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="FieldApp">
+
   <style>
     * {
       margin: 0;
@@ -66,14 +68,35 @@
       gap: 10px;
     }
 
-    /* Filters Layout */
+    /* Connectivity Status Badge */
+    .network-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 9999px;
+    }
+
+    .network-online {
+      background-color: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+
+    .network-offline {
+      background-color: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
     .filter-wrapper {
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
 
-    /* Universal Search Bar */
     .search-box {
       display: flex;
       align-items: center;
@@ -99,7 +122,6 @@
       color: #0f172a;
     }
 
-    /* Place / Area Filter Dropdown */
     .place-filter-box {
       display: flex;
       align-items: center;
@@ -133,7 +155,6 @@
       overflow-y: auto;
     }
 
-    /* Cards */
     .cards {
       width: 100%;
       background: #ffffff;
@@ -277,7 +298,6 @@
       color: #2563eb;
     }
 
-    /* Badges */
     .status-badge {
       display: inline-flex;
       align-items: center;
@@ -300,7 +320,6 @@
       border: 1px solid #a7f3d0;
     }
 
-    /* Footer Nav */
     .app-footer {
       position: fixed;
       bottom: 0;
@@ -339,7 +358,6 @@
       font-size: 28px;
     }
 
-    /* Details Page */
     .full-page {
       position: fixed;
       top: 0;
@@ -434,7 +452,6 @@
       text-align: right;
     }
 
-    /* Modal Sheet */
     .modal-backdrop {
       position: fixed;
       top: 0;
@@ -668,17 +685,16 @@
           <span class="material-symbols-outlined" style="color: #2563eb;">pending_actions</span>
           Pending Tasks
         </h2>
+        <span class="network-badge network-online" id="networkBadge">Online</span>
       </div>
 
       <!-- Filters Section -->
       <div class="filter-wrapper" id="filterWrapper">
-        <!-- Universal Search Input -->
         <div class="search-box">
           <span class="material-symbols-outlined" style="color: #64748b;">search</span>
           <input type="text" id="globalSearchInput" placeholder="Search name, route, ward, file..." oninput="handleSearch(this.value)">
         </div>
 
-        <!-- Dynamic Place / Area Filter -->
         <div class="place-filter-box">
           <span class="material-symbols-outlined">filter_alt</span>
           <select id="placeFilterSelect" onchange="handlePlaceFilter(this.value)">
@@ -720,7 +736,7 @@
               <input type="text" id="ward" placeholder="e.g. 10" required>
             </div>
             <div class="form-group" style="flex: 1.5;">
-              <label>Place (Include number e.g. 1 Chelachuvad)</label>
+              <label>Place (e.g. 1 Chelachuvad)</label>
               <input type="text" id="place" placeholder="e.g. 1 Chelachuvad" required>
             </div>
           </div>
@@ -781,7 +797,7 @@
     <div class="full-page-body" id="fullDetailsContent"></div>
   </div>
 
-  <!-- Edit Modal -->
+  <!-- Edit Modal With Mark as Completed Toggle -->
   <div class="modal-backdrop" id="editModal" onclick="closeEditModal(event)">
     <div class="modal-sheet" onclick="event.stopPropagation()">
       <div class="modal-header">
@@ -836,7 +852,6 @@
   <div class="toast" id="toast">Message</div>
 
   <script>
-    // നൽകിയ Apps Script Web App URL
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkGdLOJVVD1fV4y0tSh4HU1u0x-D8206Og2HNoQC6p40V3K9PzJ4DpnLbZJmsvBnwn/exec";
 
     let records = [];
@@ -852,26 +867,97 @@
       setTimeout(() => { toast.style.display = 'none'; }, 2600);
     }
 
-    window.addEventListener('DOMContentLoaded', fetchRecordsFromSheet);
-
-    async function fetchRecordsFromSheet() {
-      showToast("Syncing with Google Sheets...");
-      try {
-        const res = await fetch(SCRIPT_URL);
-        const result = await res.json();
-        if (result.success) {
-          records = result.data;
-          populatePlaceFilter();
-          renderList(currentTab);
-          showToast("Data synced successfully!");
-        }
-      } catch (e) {
-        console.error(e);
-        showToast("Offline mode / Sheet connect error");
+    function updateNetworkStatus() {
+      const badge = document.getElementById('networkBadge');
+      if (navigator.onLine) {
+        badge.className = 'network-badge network-online';
+        badge.innerText = 'Online';
+      } else {
+        badge.className = 'network-badge network-offline';
+        badge.innerText = 'Offline';
       }
     }
 
-    // സ്ഥലപ്പേരുകളുടെ ഡ്രോപ്പ്ഡൗൺ തയ്യാറാക്കുന്നു
+    window.addEventListener('DOMContentLoaded', () => {
+      updateNetworkStatus();
+      loadLocalRecords();
+      if (navigator.onLine) {
+        syncOfflineQueue();
+        fetchRecordsFromSheet();
+      } else {
+        showToast("Working in Offline Mode");
+      }
+    });
+
+    window.addEventListener('online', () => {
+      updateNetworkStatus();
+      showToast("Online restored! Syncing data...");
+      syncOfflineQueue();
+      fetchRecordsFromSheet();
+    });
+
+    window.addEventListener('offline', () => {
+      updateNetworkStatus();
+      showToast("Offline mode. Saved to mobile storage.");
+    });
+
+    function loadLocalRecords() {
+      const localData = localStorage.getItem('beneficiary_records');
+      if (localData) {
+        records = JSON.parse(localData);
+        populatePlaceFilter();
+        renderList(currentTab);
+      }
+    }
+
+    function saveLocalRecords() {
+      localStorage.setItem('beneficiary_records', JSON.stringify(records));
+    }
+
+    function addToSyncQueue(action, record) {
+      let queue = JSON.parse(localStorage.getItem('offline_sync_queue') || '[]');
+      queue = queue.filter(item => !(item.record.id === record.id && item.action === action));
+      queue.push({ action, record, timestamp: Date.now() });
+      localStorage.setItem('offline_sync_queue', JSON.stringify(queue));
+    }
+
+    async function syncOfflineQueue() {
+      let queue = JSON.parse(localStorage.getItem('offline_sync_queue') || '[]');
+      if (queue.length === 0) return;
+
+      const remaining = [];
+      for (const item of queue) {
+        try {
+          await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: item.action, record: item.record })
+          });
+        } catch (err) {
+          remaining.push(item);
+        }
+      }
+
+      localStorage.setItem('offline_sync_queue', JSON.stringify(remaining));
+      if (remaining.length === 0) {
+        showToast("Offline records synced with Google Sheet!");
+      }
+    }
+
+    async function fetchRecordsFromSheet() {
+      try {
+        const res = await fetch(SCRIPT_URL);
+        const result = await res.json();
+        if (result.success && result.data.length > 0) {
+          records = result.data;
+          saveLocalRecords();
+          populatePlaceFilter();
+          renderList(currentTab);
+        }
+      } catch (e) {
+        console.warn("Could not sync from Google Sheet. Using local data.");
+      }
+    }
+
     function populatePlaceFilter() {
       const select = document.getElementById('placeFilterSelect');
       const placesSet = new Set();
@@ -882,7 +968,6 @@
         }
       });
 
-      // നമ്പർ ക്രമത്തിൽ സോർട്ട് ചെയ്യുന്നു
       const sortedPlaces = Array.from(placesSet).sort((a, b) => {
         return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
       });
@@ -933,20 +1018,16 @@
       }
     }
 
-    // കാർഡുകൾ റെൻഡർ ചെയ്യുന്നു
     function renderList(statusFilter) {
       const container = document.getElementById('listView');
       container.innerHTML = '';
 
-      // 1. Status Filter
       let filtered = records.filter(r => r.status === statusFilter);
 
-      // 2. Place / Area Filter
       if (selectedPlace !== 'ALL') {
         filtered = filtered.filter(r => (r.place && r.place.trim()) === selectedPlace);
       }
 
-      // 3. Search Filter
       if (searchQuery) {
         filtered = filtered.filter(item => {
           const searchable = `${item.name} ${item.fileNo} ${item.ward} ${item.place} ${item.route} ${item.address} ${item.mobile} ${item.work}`.toLowerCase();
@@ -964,7 +1045,6 @@
         return;
       }
 
-      // ഫിൽട്ടർ ചെയ്ത ആളുകളുടെ എണ്ണം കാണിക്കാൻ ഒരു ബാഡ്ജ് ഹെഡർ
       if (selectedPlace !== 'ALL' || searchQuery) {
         const countHeader = document.createElement('div');
         countHeader.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 4px 6px; font-size: 0.9rem; font-weight: 600; color: #475569;";
@@ -975,7 +1055,6 @@
         container.appendChild(countHeader);
       }
 
-      // കാർഡുകൾ ലിസ്റ്റ് ചെയ്യുന്നു
       filtered.forEach(item => {
         const card = document.createElement('div');
         card.className = 'cards';
@@ -1050,20 +1129,26 @@
       };
 
       records.unshift(newRecord);
+      saveLocalRecords();
       populatePlaceFilter();
       document.getElementById('recordForm').reset();
       switchTab(newRecord.status);
-      showToast("Saving to Google Sheets...");
 
-      try {
-        await fetch(SCRIPT_URL, {
-          method: "POST",
-          body: JSON.stringify({ action: "add", record: newRecord })
-        });
-        showToast(`Saved to ${newRecord.status} Sheet!`);
-      } catch (err) {
-        console.error(err);
-        showToast("Error saving to Sheets");
+      if (navigator.onLine) {
+        showToast("Saving to Google Sheets...");
+        try {
+          await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "add", record: newRecord })
+          });
+          showToast(`Saved to ${newRecord.status} Sheet!`);
+        } catch (err) {
+          addToSyncQueue("add", newRecord);
+          showToast("Network busy. Saved offline for auto-sync.");
+        }
+      } else {
+        addToSyncQueue("add", newRecord);
+        showToast("Saved offline. Will sync when back online!");
       }
     }
 
@@ -1216,19 +1301,25 @@
       if (loc) selectedRecord.location = loc;
       selectedRecord.visitDate = new Date().toISOString().split('T')[0];
 
+      saveLocalRecords();
       closeEditModalDirect();
       renderDetailsView();
-      showToast(oldStatus !== newStatus ? `Moving to ${newStatus} Sheet...` : "Updating Sheet...");
 
-      try {
-        await fetch(SCRIPT_URL, {
-          method: "POST",
-          body: JSON.stringify({ action: "update", record: selectedRecord })
-        });
-        showToast(oldStatus !== newStatus ? `Successfully moved to ${newStatus}!` : "Updated successfully!");
-      } catch (err) {
-        console.error(err);
-        showToast("Failed to update Google Sheet");
+      if (navigator.onLine) {
+        showToast(oldStatus !== newStatus ? `Moving to ${newStatus} Sheet...` : "Updating Sheet...");
+        try {
+          await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "update", record: selectedRecord })
+          });
+          showToast(oldStatus !== newStatus ? `Successfully moved to ${newStatus}!` : "Updated successfully!");
+        } catch (err) {
+          addToSyncQueue("update", selectedRecord);
+          showToast("Saved offline. Sync pending.");
+        }
+      } else {
+        addToSyncQueue("update", selectedRecord);
+        showToast("Saved offline. Will move sheet when back online!");
       }
     }
 
@@ -1262,15 +1353,15 @@ ${selectedRecord.location ? `🌐 *Location:* ${selectedRecord.location}` : ''}`
         window.open(telegramUrl, '_blank');
       });
     }
+
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => console.log('SW Registered:', reg.scope))
+          .catch((err) => console.error('SW Failed:', err));
+      });
+    }
   </script>
-  <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then((reg) => console.log('Service Worker Registered! Scope:', reg.scope))
-        .catch((err) => console.error('Service Worker Registration Failed:', err));
-    });
-  }
-</script>
 </body>
 </html>
