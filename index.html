@@ -7,7 +7,12 @@
   
   <!-- Google Material Symbols -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
-
+<!-- PWA Settings -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#2563eb">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="FieldApp">
   <style>
     * {
       margin: 0;
@@ -1258,5 +1263,14 @@ ${selectedRecord.location ? `🌐 *Location:* ${selectedRecord.location}` : ''}`
       });
     }
   </script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((reg) => console.log('Service Worker Registered! Scope:', reg.scope))
+        .catch((err) => console.error('Service Worker Registration Failed:', err));
+    });
+  }
+</script>
 </body>
 </html>
