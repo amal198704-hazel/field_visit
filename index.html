@@ -1354,14 +1354,15 @@ ${selectedRecord.location ? `🌐 *Location:* ${selectedRecord.location}` : ''}`
       });
     }
 
-    // Service Worker Registration
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then((reg) => console.log('SW Registered:', reg.scope))
-          .catch((err) => console.error('SW Failed:', err));
-      });
-    }
   </script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js', { scope: './' })
+        .then((reg) => console.log('PWA Ready! Scope:', reg.scope))
+        .catch((err) => console.error('PWA Reg Error:', err));
+    });
+  }
+</script>
 </body>
 </html>
