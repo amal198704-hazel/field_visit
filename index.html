@@ -68,7 +68,6 @@
       gap: 10px;
     }
 
-    /* Connectivity Status Badge */
     .network-badge {
       display: inline-flex;
       align-items: center;
@@ -241,6 +240,13 @@
       color: #334155;
       font-size: 1rem;
       line-height: 1.45;
+    }
+
+    .card-fileno {
+      font-size: 0.85rem;
+      color: #64748b;
+      font-weight: 600;
+      margin-top: -2px;
     }
 
     .route-text {
@@ -1080,6 +1086,7 @@
             </div>
 
             <p>${item.address}</p>
+            <div class="card-fileno">File No: ${item.fileNo}</div>
 
             <div class="route-text">
               <span class="material-symbols-outlined">near_me</span>
@@ -1111,6 +1118,8 @@
     async function handleFormSubmit(e) {
       e.preventDefault();
 
+      const newStatus = document.getElementById('status').value;
+
       const newRecord = {
         id: "ID_" + Date.now(),
         fileNo: document.getElementById('fileNo').value.trim(),
@@ -1121,10 +1130,11 @@
         ward: document.getElementById('ward').value.trim(),
         place: document.getElementById('place').value.trim(),
         route: document.getElementById('route').value.trim(),
-        status: document.getElementById('status').value,
+        status: newStatus,
         remarks: "Pending field verification",
         eligibility: "Pending Verification",
-        visitDate: new Date().toISOString().split('T')[0],
+        // Pending ആണെങ്കിൽ തീയതി ബ്ലാങ്ക് ആക്കുന്നു, Completed ആണെങ്കിൽ മാത്രം ഇന്നത്തെ തീയതി നൽകുന്നു
+        visitDate: newStatus === "Completed" ? new Date().toISOString().split('T')[0] : "",
         location: ""
       };
 
@@ -1177,7 +1187,7 @@
         </div>
         <div class="detail-item">
           <span class="lbl">Ward:</span>
-          <span class="val">Ward ${selectedRecord.ward}</span>
+          <span class="val">${selectedRecord.ward}</span>
         </div>
         <div class="detail-item">
           <span class="lbl">Contact Phone:</span>
@@ -1195,10 +1205,12 @@
           <span class="lbl">Eligibility:</span>
           <span class="val" style="color: #059669;">${selectedRecord.eligibility}</span>
         </div>
-        <div class="detail-item">
-          <span class="lbl">Visit Date:</span>
-          <span class="val">${selectedRecord.visitDate || 'Not Scheduled'}</span>
-        </div>
+        ${selectedRecord.status === 'Completed' && selectedRecord.visitDate ? `
+          <div class="detail-item">
+            <span class="lbl">Completed Date:</span>
+            <span class="val">${selectedRecord.visitDate}</span>
+          </div>
+        ` : ''}
         <div class="detail-item" style="flex-direction: column; gap: 6px;">
           <span class="lbl">Full Address:</span>
           <span class="val" style="text-align: left; font-weight: 500;">${selectedRecord.address}</span>
@@ -1299,7 +1311,13 @@
       selectedRecord.remarks = document.getElementById('editRemarks').value.trim();
       const loc = document.getElementById('capturedMapUrl').value;
       if (loc) selectedRecord.location = loc;
-      selectedRecord.visitDate = new Date().toISOString().split('T')[0];
+
+      // Mark as completed ആകുമ്പോൾ മാത്രം ഇന്നത്തെ തീയതി ക്യാപ്‌ചർ ചെയ്യുന്നു
+      if (isCompleted) {
+        selectedRecord.visitDate = new Date().toISOString().split('T')[0];
+      } else {
+        selectedRecord.visitDate = "";
+      }
 
       saveLocalRecords();
       closeEditModalDirect();
@@ -1332,13 +1350,12 @@
 👤 *Name:* ${selectedRecord.name}
 📁 *File No:* ${selectedRecord.fileNo}
 💼 *Work:* ${selectedRecord.work}
-📍 *Place:* ${selectedRecord.place} (Ward ${selectedRecord.ward})
+📍 *Place:* ${selectedRecord.place} (${selectedRecord.ward})
 📞 *Mobile:* ${selectedRecord.mobile}
 🏠 *Address:* ${selectedRecord.address}
 🛣️ *Route:* ${selectedRecord.route}
 📌 *Eligibility:* ${selectedRecord.eligibility}
-⚡ *Status:* ${selectedRecord.status}
-📅 *Visit Date:* ${selectedRecord.visitDate}
+⚡ *Status:* ${selectedRecord.status}${selectedRecord.status === 'Completed' && selectedRecord.visitDate ? `\n📅 *Completed Date:* ${selectedRecord.visitDate}` : ''}
 📝 *Remarks:* ${selectedRecord.remarks}
 ${selectedRecord.location ? `🌐 *Location:* ${selectedRecord.location}` : ''}`;
 
@@ -1354,15 +1371,13 @@ ${selectedRecord.location ? `🌐 *Location:* ${selectedRecord.location}` : ''}`
       });
     }
 
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js', { scope: './' })
+          .then((reg) => console.log('PWA Ready! Scope:', reg.scope))
+          .catch((err) => console.error('PWA Reg Error:', err));
+      });
+    }
   </script>
-  <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js', { scope: './' })
-        .then((reg) => console.log('PWA Ready! Scope:', reg.scope))
-        .catch((err) => console.error('PWA Reg Error:', err));
-    });
-  }
-</script>
 </body>
 </html>
