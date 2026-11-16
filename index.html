@@ -1483,7 +1483,7 @@
       }
     }
 
-    async function handlePdfUploadSubmit(e) {
+   async function handlePdfUploadSubmit(e) {
       e.preventDefault();
       const fileInput = document.getElementById('pdfFileInput');
       if (!fileInput.files || !fileInput.files[0] || !pdfTargetRecord) return;
@@ -1526,18 +1526,26 @@
         pdfTargetRecord.pdfUrl = cloudData.secure_url;
         saveLocalRecords();
 
-        await fetch(SCRIPT_URL, {
+        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving link to Sheet...`;
+
+        const sheetRes = await fetch(SCRIPT_URL, {
           method: "POST",
           redirect: "follow",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({ action: "update", record: pdfTargetRecord })
         });
 
+        const sheetResult = await sheetRes.json();
+        if (!sheetResult.success) {
+          addToSyncQueue("update", pdfTargetRecord);
+          throw new Error("Uploaded to Cloudinary, but Sheet save failed: " + (sheetResult.error || sheetResult.message));
+        }
+
         if (selectedRecord && selectedRecord.id === pdfTargetRecord.id) {
           renderDetailsView();
         }
         renderList(currentTab);
-        showToast("PDF uploaded & saved to Google Sheet!");
+        showToast("PDF uploaded & saved to Column O in Sheet!");
       } catch (err) {
         alert("PDF Upload Error: " + err.message);
       } finally {
@@ -1546,7 +1554,6 @@
         closePdfUploadModal();
       }
     }
-
     function openFullDetails(item) {
       selectedRecord = item;
       renderDetailsView();
