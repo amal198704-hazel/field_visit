@@ -1,4 +1,4 @@
-const CACHE_NAME = 'field-app-v10';
+const CACHE_NAME = 'field-app-v11';
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
