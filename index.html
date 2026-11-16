@@ -14,6 +14,10 @@
 
   <!-- Google Material Symbols -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- PDF.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
   <style>
     * {
@@ -121,6 +125,25 @@
       color: #0f172a;
     }
 
+    .search-clear-btn {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: #cbd5e1;
+      color: #1e293b;
+      border: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      flex-shrink: 0;
+      font-size: 13px;
+    }
+
+    .search-clear-btn.visible {
+      display: inline-flex;
+    }
+
     .place-filter-box {
       display: flex;
       align-items: center;
@@ -204,15 +227,16 @@
     .action-buttons {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      flex-shrink: 0;
     }
 
     .btn-icon {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 44px;
-      height: 44px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       text-decoration: none;
       transition: background-color 0.2s ease;
@@ -232,8 +256,21 @@
       border: 1px solid #a7f3d0;
     }
 
+    .btn-pdf-card {
+      background-color: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+      border-radius: 9999px;
+      padding: 0 10px;
+      height: 36px;
+      width: auto;
+      gap: 5px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
     .btn-icon .material-symbols-outlined {
-      font-size: 24px;
+      font-size: 22px;
     }
 
     .card-body p {
@@ -458,6 +495,20 @@
       text-align: right;
     }
 
+    .route-edit-btn {
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
     .modal-backdrop {
       position: fixed;
       top: 0;
@@ -470,6 +521,11 @@
       align-items: flex-end;
       z-index: 100;
       backdrop-filter: blur(2px);
+    }
+
+    .modal-backdrop.center-modal {
+      align-items: center;
+      padding: 18px;
     }
 
     .modal-backdrop.open {
@@ -488,6 +544,15 @@
       overflow-y: auto;
     }
 
+    .modal-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 420px;
+      border-radius: 20px;
+      padding: 22px 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+    }
+
     @keyframes slideUp {
       from { transform: translateY(100%); }
       to { transform: translateY(0); }
@@ -503,7 +568,7 @@
     }
 
     .modal-header h3 {
-      font-size: 1.3rem;
+      font-size: 1.25rem;
       color: #1e3a8a;
     }
 
@@ -548,13 +613,29 @@
       padding: 16px;
       border: none;
       border-radius: 12px;
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       font-weight: 700;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 10px;
+      width: 100%;
+    }
+
+    .secondary-btn {
+      background-color: #f1f5f9;
+      color: #334155;
+      padding: 14px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 12px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
       width: 100%;
     }
 
@@ -578,6 +659,16 @@
       background-color: #ecfdf5;
       border-color: #34d399;
       color: #047857;
+    }
+
+    .file-drop-area {
+      border: 2px dashed #93c5fd;
+      background-color: #eff6ff;
+      border-radius: 14px;
+      padding: 22px 16px;
+      text-align: center;
+      cursor: pointer;
+      color: #1e3a8a;
     }
 
     .toggle-card {
@@ -653,6 +744,50 @@
       transform: translateX(22px);
     }
 
+    /* PDF.js Viewer Modal */
+    .pdf-viewer-overlay {
+      position: fixed;
+      inset: 0;
+      background: #0f172a;
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .pdf-viewer-overlay.open {
+      display: flex;
+    }
+
+    .pdf-viewer-header {
+      background: #1e293b;
+      color: #ffffff;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #334155;
+    }
+
+    .pdf-canvas-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .pdf-canvas-container canvas {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
     .toast {
       position: fixed;
       bottom: 90px;
@@ -665,8 +800,9 @@
       font-size: 0.95rem;
       font-weight: 500;
       display: none;
-      z-index: 150;
+      z-index: 250;
       box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      white-space: nowrap;
     }
 
     .empty-state {
@@ -699,12 +835,15 @@
         <div class="search-box">
           <span class="material-symbols-outlined" style="color: #64748b;">search</span>
           <input type="text" id="globalSearchInput" placeholder="Search name, route, ward, file..." oninput="handleSearch(this.value)">
+          <button type="button" id="searchClearBtn" class="search-clear-btn" onclick="clearSearch()" title="Clear search">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
         </div>
 
         <div class="place-filter-box">
           <span class="material-symbols-outlined">filter_alt</span>
           <select id="placeFilterSelect" onchange="handlePlaceFilter(this.value)">
-            <option value="ALL">All Places / Areas</option>
+            <option value="ALL">All Places / Areas (Pending)</option>
           </select>
         </div>
       </div>
@@ -803,6 +942,88 @@
     <div class="full-page-body" id="fullDetailsContent"></div>
   </div>
 
+  <!-- Edit Route & Landmark Modal -->
+  <div class="modal-backdrop" id="routeEditModal" onclick="if(event.target.id==='routeEditModal') closeRouteEditModal()">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-route" style="margin-right: 8px;"></i>Edit Route & Landmark</h3>
+        <button class="header-btn" style="width: 38px; height: 38px;" onclick="closeRouteEditModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form onsubmit="handleRouteEditSubmit(event)">
+        <div class="form-group">
+          <label>Route & Landmark</label>
+          <textarea id="editRouteInput" rows="3" placeholder="Enter updated route or landmark..." required></textarea>
+        </div>
+        <button type="submit" class="submit-btn">
+          <i class="fa-solid fa-floppy-disk"></i> Save Route & Landmark
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Ask PDF Confirmation Popup -->
+  <div class="modal-backdrop center-modal" id="askPdfModal">
+    <div class="modal-card">
+      <div style="text-align: center; margin-bottom: 18px;">
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: #fef2f2; color: #dc2626; display: inline-flex; align-items: center; justify-content: center; font-size: 26px; margin-bottom: 12px;">
+          <i class="fa-solid fa-file-pdf"></i>
+        </div>
+        <h3 style="font-size: 1.25rem; color: #0f172a; margin-bottom: 6px;">Attach Document?</h3>
+        <p style="color: #475569; font-size: 0.98rem;">Do you want to add a PDF file for this beneficiary?</p>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <button type="button" class="secondary-btn" onclick="declinePdfUpload()">No</button>
+        <button type="button" class="submit-btn" style="background-color: #2563eb;" onclick="acceptPdfUpload()">
+          <i class="fa-solid fa-upload"></i> Yes
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF Uploader Modal -->
+  <div class="modal-backdrop center-modal" id="pdfUploadModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-file-arrow-up" style="margin-right: 8px; color: #dc2626;"></i>Upload PDF</h3>
+        <button class="header-btn" style="width: 36px; height: 36px;" onclick="closePdfUploadModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form onsubmit="handlePdfUploadSubmit(event)">
+        <div class="form-group">
+          <label class="file-drop-area" for="pdfFileInput">
+            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 32px; color: #2563eb; margin-bottom: 8px; display: block;"></i>
+            <span id="pdfFileLabel" style="font-weight: 600;">Tap to select PDF file</span>
+            <p style="font-size: 0.82rem; color: #64748b; margin-top: 4px;">PDF format only (Max 10MB)</p>
+          </label>
+          <input type="file" id="pdfFileInput" accept="application/pdf" style="display: none;" onchange="onPdfFileSelected(this)" required>
+        </div>
+        <button type="submit" id="btnUploadPdfSubmit" class="submit-btn">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Upload to Google Sheets
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- PDF.js Viewer Overlay -->
+  <div class="pdf-viewer-overlay" id="pdfViewerOverlay">
+    <div class="pdf-viewer-header">
+      <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+        <i class="fa-solid fa-file-pdf" style="color: #f87171; font-size: 20px;"></i>
+        <span id="pdfViewerTitle" style="font-weight: 600; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Document Viewer</span>
+      </div>
+      <button type="button" class="header-btn" style="width: 38px; height: 38px; background: #334155; color: #fff;" onclick="closePdfViewer()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div id="pdfViewerStatus" style="color: #cbd5e1; text-align: center; padding: 30px 16px; font-size: 1rem;">
+      Loading PDF...
+    </div>
+    <div class="pdf-canvas-container" id="pdfCanvasContainer"></div>
+  </div>
+
   <!-- Edit Modal With Mark as Completed Toggle -->
   <div class="modal-backdrop" id="editModal" onclick="closeEditModal(event)">
     <div class="modal-sheet" onclick="event.stopPropagation()">
@@ -860,11 +1081,17 @@
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkGdLOJVVD1fV4y0tSh4HU1u0x-D8206Og2HNoQC6p40V3K9PzJ4DpnLbZJmsvBnwn/exec";
 
+    // Configure PDF.js worker
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
     let records = [];
     let currentTab = 'Pending';
     let searchQuery = '';
     let selectedPlace = 'ALL';
     let selectedRecord = null;
+    let newlyCreatedRecord = null;
 
     function showToast(msg) {
       const toast = document.getElementById('toast');
@@ -964,12 +1191,13 @@
       }
     }
 
+    // 1. Only show places from Pending Lists
     function populatePlaceFilter() {
       const select = document.getElementById('placeFilterSelect');
       const placesSet = new Set();
 
       records.forEach(r => {
-        if (r.place && r.place.trim()) {
+        if (r.status === 'Pending' && r.place && r.place.trim()) {
           placesSet.add(r.place.trim());
         }
       });
@@ -986,11 +1214,26 @@
         select.appendChild(opt);
       });
 
+      if (selectedPlace !== 'ALL' && !placesSet.has(selectedPlace)) {
+        selectedPlace = 'ALL';
+      }
       select.value = selectedPlace;
     }
 
+    // 2. Search with Clear (Close) Button
     function handleSearch(val) {
       searchQuery = val.trim().toLowerCase();
+      const clearBtn = document.getElementById('searchClearBtn');
+      clearBtn.classList.toggle('visible', val.length > 0);
+      renderList(currentTab);
+    }
+
+    function clearSearch() {
+      const input = document.getElementById('globalSearchInput');
+      input.value = '';
+      searchQuery = '';
+      document.getElementById('searchClearBtn').classList.remove('visible');
+      input.focus();
       renderList(currentTab);
     }
 
@@ -1066,6 +1309,14 @@
         card.className = 'cards';
         card.onclick = () => openFullDetails(item);
 
+        // 5. Small PDF button on main card when PDF exists
+        const pdfBtnHtml = item.pdfId ? `
+          <button type="button" class="btn-icon btn-pdf-card" title="View PDF" onclick="event.stopPropagation(); openPdfViewer('${item.pdfId}', '${item.name.replace(/'/g, "\\'")}')">
+            <i class="fa-solid fa-file-pdf"></i>
+            <span>PDF</span>
+          </button>
+        ` : '';
+
         card.innerHTML = `
           <div class="card-header">
             <span>${item.place}</span>
@@ -1076,6 +1327,7 @@
             <div class="name-action-row">
               <h4>${item.name}</h4>
               <div class="action-buttons">
+                ${pdfBtnHtml}
                 <a href="tel:${item.mobile}" class="btn-icon btn-call" title="Call" onclick="event.stopPropagation()">
                   <span class="material-symbols-outlined">call</span>
                 </a>
@@ -1133,16 +1385,16 @@
         status: newStatus,
         remarks: "Pending field verification",
         eligibility: "Pending Verification",
-        // Pending ആണെങ്കിൽ തീയതി ബ്ലാങ്ക് ആക്കുന്നു, Completed ആണെങ്കിൽ മാത്രം ഇന്നത്തെ തീയതി നൽകുന്നു
         visitDate: newStatus === "Completed" ? new Date().toISOString().split('T')[0] : "",
-        location: ""
+        location: "",
+        pdfId: ""
       };
 
       records.unshift(newRecord);
+      newlyCreatedRecord = newRecord;
       saveLocalRecords();
       populatePlaceFilter();
       document.getElementById('recordForm').reset();
-      switchTab(newRecord.status);
 
       if (navigator.onLine) {
         showToast("Saving to Google Sheets...");
@@ -1160,6 +1412,89 @@
         addToSyncQueue("add", newRecord);
         showToast("Saved offline. Will sync when back online!");
       }
+
+      // 4. Ask user if they want to add a PDF
+      document.getElementById('askPdfModal').classList.add('open');
+    }
+
+    function declinePdfUpload() {
+      document.getElementById('askPdfModal').classList.remove('open');
+      if (newlyCreatedRecord) {
+        switchTab(newlyCreatedRecord.status);
+        newlyCreatedRecord = null;
+      }
+    }
+
+    function acceptPdfUpload() {
+      document.getElementById('askPdfModal').classList.remove('open');
+      document.getElementById('pdfFileInput').value = '';
+      document.getElementById('pdfFileLabel').innerText = 'Tap to select PDF file';
+      document.getElementById('pdfUploadModal').classList.add('open');
+    }
+
+    function closePdfUploadModal() {
+      document.getElementById('pdfUploadModal').classList.remove('open');
+      if (newlyCreatedRecord) {
+        switchTab(newlyCreatedRecord.status);
+        newlyCreatedRecord = null;
+      }
+    }
+
+    function onPdfFileSelected(input) {
+      if (input.files && input.files[0]) {
+        document.getElementById('pdfFileLabel').innerText = input.files[0].name;
+      }
+    }
+
+    async function handlePdfUploadSubmit(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('pdfFileInput');
+      if (!fileInput.files || !fileInput.files[0] || !newlyCreatedRecord) return;
+
+      if (!navigator.onLine) {
+        alert("Internet connection is required to upload PDF to Google Sheets.");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const submitBtn = document.getElementById('btnUploadPdfSubmit');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading PDF...`;
+
+      const reader = new FileReader();
+      reader.onload = async function() {
+        try {
+          const base64Data = reader.result.split(',')[1];
+          const res = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({
+              action: "uploadPdf",
+              recordId: newlyCreatedRecord.id,
+              fileName: `${newlyCreatedRecord.fileNo.replace(/[\/\\]/g, '_')}_${newlyCreatedRecord.name}.pdf`,
+              base64Data: base64Data
+            })
+          });
+          const result = await res.json();
+          if (result.success && result.pdfId) {
+            newlyCreatedRecord.pdfId = result.pdfId;
+            // Cache base64 locally for instant PDF.js viewing
+            try {
+              localStorage.setItem('pdf_cache_' + result.pdfId, base64Data);
+            } catch (quotaErr) {}
+            saveLocalRecords();
+            showToast("PDF uploaded & linked to Sheet!");
+          } else {
+            showToast("PDF upload failed. Try again.");
+          }
+        } catch (err) {
+          showToast("Error uploading PDF.");
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Upload to Google Sheets`;
+          closePdfUploadModal();
+        }
+      };
+      reader.readAsDataURL(file);
     }
 
     function openFullDetails(item) {
@@ -1215,24 +1550,142 @@
           <span class="lbl">Full Address:</span>
           <span class="val" style="text-align: left; font-weight: 500;">${selectedRecord.address}</span>
         </div>
+
+        <!-- 3. Route & Landmark with Font Awesome Edit Button -->
         <div class="detail-item" style="flex-direction: column; gap: 6px;">
-          <span class="lbl">Route & Landmark:</span>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="lbl">Route & Landmark:</span>
+            <button type="button" class="route-edit-btn" onclick="openRouteEditModal()" title="Edit Route & Landmark">
+              <i class="fa-solid fa-pen-to-square"></i> Edit
+            </button>
+          </div>
           <span class="val" style="text-align: left; font-weight: 500;">${selectedRecord.route}</span>
         </div>
 
+        ${selectedRecord.pdfId ? `
+          <div>
+            <button type="button" onclick="openPdfViewer('${selectedRecord.pdfId}', '${selectedRecord.name.replace(/'/g, "\\'")}')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: #fef2f2; color: #dc2626; border: 1.5px solid #fecaca; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 1.05rem; cursor: pointer;">
+              <i class="fa-solid fa-file-pdf" style="font-size: 20px;"></i> View Attached PDF
+            </button>
+          </div>
+        ` : ''}
+
         ${selectedRecord.location ? `
-          <div style="margin-top: 10px;">
+          <div>
             <a href="${selectedRecord.location}" target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: #eff6ff; color: #1d4ed8; border: 1.5px solid #bfdbfe; padding: 14px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 1.05rem;">
               <span class="material-symbols-outlined" style="color: #059669;">pin_drop</span> Open in Google Maps
             </a>
           </div>
         ` : ''}
 
-        <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; padding: 14px; border-radius: 12px; margin-top: 10px;">
+        <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; padding: 14px; border-radius: 12px; margin-top: 4px;">
           <strong style="color: #1e3a8a; font-size: 0.95rem;">Remarks:</strong>
           <p style="color: #334155; font-size: 1rem; margin-top: 6px; line-height: 1.4;">${selectedRecord.remarks}</p>
         </div>
       `;
+    }
+
+    // Route & Landmark Edit Modal Logic
+    function openRouteEditModal() {
+      if (!selectedRecord) return;
+      document.getElementById('editRouteInput').value = selectedRecord.route || '';
+      document.getElementById('routeEditModal').classList.add('open');
+    }
+
+    function closeRouteEditModal() {
+      document.getElementById('routeEditModal').classList.remove('open');
+    }
+
+    async function handleRouteEditSubmit(e) {
+      e.preventDefault();
+      if (!selectedRecord) return;
+
+      const updatedRoute = document.getElementById('editRouteInput').value.trim();
+      selectedRecord.route = updatedRoute;
+
+      saveLocalRecords();
+      closeRouteEditModal();
+      renderDetailsView();
+      renderList(currentTab);
+
+      if (navigator.onLine) {
+        showToast("Saving Route & Landmark...");
+        try {
+          await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "update", record: selectedRecord })
+          });
+          showToast("Route & Landmark updated!");
+        } catch (err) {
+          addToSyncQueue("update", selectedRecord);
+          showToast("Saved offline. Sync pending.");
+        }
+      } else {
+        addToSyncQueue("update", selectedRecord);
+        showToast("Saved offline. Will sync when online!");
+      }
+    }
+
+    // 5. PDF.js Viewer Functions
+    async function openPdfViewer(pdfId, beneficiaryName) {
+      const overlay = document.getElementById('pdfViewerOverlay');
+      const statusEl = document.getElementById('pdfViewerStatus');
+      const container = document.getElementById('pdfCanvasContainer');
+      document.getElementById('pdfViewerTitle').innerText = `${beneficiaryName} - PDF`;
+
+      container.innerHTML = '';
+      statusEl.style.display = 'block';
+      statusEl.innerText = 'Loading PDF document...';
+      overlay.classList.add('open');
+
+      try {
+        let base64Data = localStorage.getItem('pdf_cache_' + pdfId);
+
+        if (!base64Data) {
+          if (!navigator.onLine) {
+            statusEl.innerText = 'Offline: Connect to internet to load this PDF.';
+            return;
+          }
+          const res = await fetch(`${SCRIPT_URL}?action=getPdf&pdfId=${encodeURIComponent(pdfId)}`);
+          const result = await res.json();
+          if (!result.success || !result.base64) {
+            statusEl.innerText = 'Unable to load PDF from Google Drive.';
+            return;
+          }
+          base64Data = result.base64;
+          try {
+            localStorage.setItem('pdf_cache_' + pdfId, base64Data);
+          } catch (quotaErr) {}
+        }
+
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+        statusEl.style.display = 'none';
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const viewport = page.getViewport({ scale: 1.5 });
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+
+          await page.render({ canvasContext: context, viewport: viewport }).promise;
+          container.appendChild(canvas);
+        }
+      } catch (err) {
+        statusEl.innerText = 'Failed to render PDF.';
+      }
+    }
+
+    function closePdfViewer() {
+      document.getElementById('pdfViewerOverlay').classList.remove('open');
+      document.getElementById('pdfCanvasContainer').innerHTML = '';
     }
 
     function closeDetailsPage() {
@@ -1312,7 +1765,6 @@
       const loc = document.getElementById('capturedMapUrl').value;
       if (loc) selectedRecord.location = loc;
 
-      // Mark as completed ആകുമ്പോൾ മാത്രം ഇന്നത്തെ തീയതി ക്യാപ്‌ചർ ചെയ്യുന്നു
       if (isCompleted) {
         selectedRecord.visitDate = new Date().toISOString().split('T')[0];
       } else {
@@ -1320,6 +1772,7 @@
       }
 
       saveLocalRecords();
+      populatePlaceFilter();
       closeEditModalDirect();
       renderDetailsView();
 
