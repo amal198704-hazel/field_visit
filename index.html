@@ -1845,7 +1845,7 @@
       }
     }
 
-    function copyAndShareTelegram() {
+   function copyAndShareTelegram() {
       if (!selectedRecord) return;
 
       const formattedText = 
@@ -1860,19 +1860,37 @@
 🛣️ *Route:* ${selectedRecord.route}
 📌 *Eligibility:* ${selectedRecord.eligibility}
 ⚡ *Status:* ${selectedRecord.status}${selectedRecord.status === 'Completed' && selectedRecord.visitDate ? `\n📅 *Completed Date:* ${selectedRecord.visitDate}` : ''}
-📝 *Remarks:* ${selectedRecord.remarks}
-${selectedRecord.location ? `🌐 *Location:* ${selectedRecord.location}` : ''}`;
+📝 *Remarks:* ${selectedRecord.remarks}${selectedRecord.location ? `\n🌐 *Location:* ${selectedRecord.location}` : ''}${selectedRecord.pdfUrl ? `\n📄 *Document:* ${selectedRecord.pdfUrl}` : ''}`;
 
-      navigator.clipboard.writeText(formattedText).then(() => {
-        showToast("Copied! Opening Telegram...");
+      const launchTelegram = () => {
+        const encodedText = encodeURIComponent(formattedText);
+        // Native Android/iOS URI scheme launches the Telegram app directly
+        const appUri = `tg://msg_url?url=%20&text=${encodedText}`;
+        // Web fallback includes required 'url' parameter so it never lands on telegram.org
+        const webFallback = `https://t.me/share/url?url=${encodeURIComponent(selectedRecord.location || selectedRecord.pdfUrl || 'https://t.me')}&text=${encodedText}`;
+
+        window.location.href = appUri;
+
+        // If Telegram app isn't installed (e.g., on desktop), fall back to web share after 1.2s
         setTimeout(() => {
-          const telegramUrl = `https://t.me/share/url?text=${encodeURIComponent(formattedText)}`;
-          window.open(telegramUrl, '_blank');
-        }, 500);
-      }).catch(() => {
-        const telegramUrl = `https://t.me/share/url?text=${encodeURIComponent(formattedText)}`;
-        window.open(telegramUrl, '_blank');
-      });
+          if (!document.hidden) {
+            window.open(webFallback, '_blank', 'noopener,noreferrer');
+          }
+        }, 1200);
+      };
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(formattedText)
+          .then(() => {
+            showToast("Copied! Opening Telegram app...");
+            setTimeout(launchTelegram, 350);
+          })
+          .catch(() => {
+            launchTelegram();
+          });
+      } else {
+        launchTelegram();
+      }
     }
 
     if ('serviceWorker' in navigator) {
