@@ -71,7 +71,16 @@
       align-items: center;
       gap: 10px;
     }
-
+.version-banner {
+      background-color: #1e3a8a;
+      color: #ffffff;
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      letter-spacing: 0.3px;
+      transition: opacity 0.4s ease;
+    }
     .network-badge {
       display: inline-flex;
       align-items: center;
@@ -823,7 +832,7 @@
   </style>
 </head>
 <body>
-
+<div class="version-banner" id="versionBanner">App Version: v2.5 (Cloudinary + PDF.js)</div>
   <div class="app-container">
     <header class="app-header">
       <div class="header-top">
@@ -1872,6 +1881,13 @@ ${selectedRecord.location ? `🌐 *Location:* ${selectedRecord.location}` : ''}`
           .catch((err) => console.error('PWA Reg Error:', err));
       });
     }
+  const vBanner = document.getElementById('versionBanner');
+      if (vBanner) {
+        setTimeout(() => {
+          vBanner.style.opacity = '0';
+          setTimeout(() => { vBanner.style.display = 'none'; }, 400);
+        }, 5000);
+      }
   </script>
 </body>
 </html>
