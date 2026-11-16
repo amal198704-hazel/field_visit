@@ -1929,9 +1929,13 @@
       pushAppHistory('askPdfModal');
     }
 
-    function declinePdfUpload(fromPopState = false) {
+   function declinePdfUpload(fromPopState = false) {
       document.getElementById('askPdfModal').classList.remove('open');
-      if (!fromPopState && history.state?.view === 'askPdfModal') history.back();
+      if (!fromPopState && history.state?.view === 'askPdfModal') {
+        isHandlingBack = true;
+        history.back();
+        setTimeout(() => { isHandlingBack = false; }, 60);
+      }
       if (pdfTargetRecord && returnToTabAfterPdf) {
         switchTab(pdfTargetRecord.status);
       }
@@ -1955,7 +1959,11 @@
 
     function closePdfUploadModal(fromPopState = false) {
       document.getElementById('pdfUploadModal').classList.remove('open');
-      if (!fromPopState && history.state?.view === 'pdfUploadModal') history.back();
+      if (!fromPopState && history.state?.view === 'pdfUploadModal') {
+        isHandlingBack = true;
+        history.back();
+        setTimeout(() => { isHandlingBack = false; }, 60);
+      }
       if (pdfTargetRecord && returnToTabAfterPdf) {
         switchTab(pdfTargetRecord.status);
       }
@@ -2190,7 +2198,11 @@
 
     function closeRouteEditModal(fromPopState = false) {
       document.getElementById('routeEditModal').classList.remove('open');
-      if (!fromPopState && history.state?.view === 'routeModal') history.back();
+      if (!fromPopState && history.state?.view === 'routeModal') {
+        isHandlingBack = true;
+        history.back();
+        setTimeout(() => { isHandlingBack = false; }, 60);
+      }
     }
 
     async function handleRouteEditSubmit(e) {
@@ -2260,9 +2272,12 @@
     function closePdfViewer(fromPopState = false) {
       document.getElementById('pdfViewerOverlay').classList.remove('open');
       document.getElementById('pdfCanvasContainer').innerHTML = '';
-      if (!fromPopState && history.state?.view === 'pdfViewer') history.back();
+      if (!fromPopState && history.state?.view === 'pdfViewer') {
+        isHandlingBack = true;
+        history.back();
+        setTimeout(() => { isHandlingBack = false; }, 60);
+      }
     }
-
     function closeDetailsPage(fromPopState = false) {
       document.getElementById('fullDetailsPage').classList.remove('active');
       if (!fromPopState && history.state?.view === 'details') history.back();
@@ -2293,13 +2308,16 @@
       pushAppHistory('editModal');
     }
 
-    function closeEditModalDirect(fromPopState = false) {
+   function closeEditModalDirect(fromPopState = false) {
       draftWatermarkedPhotos.forEach(p => { if (p.previewUrl) URL.revokeObjectURL(p.previewUrl); });
       draftWatermarkedPhotos = [];
       document.getElementById('editModal').classList.remove('open');
-      if (!fromPopState && history.state?.view === 'editModal') history.back();
+      if (!fromPopState && history.state?.view === 'editModal') {
+        isHandlingBack = true;
+        history.back();
+        setTimeout(() => { isHandlingBack = false; }, 60);
+      }
     }
-
     function closeEditModal(e) {
       if (e.target.id === 'editModal') closeEditModalDirect();
     }
@@ -2502,7 +2520,8 @@
       }
     }
 
-    window.addEventListener("popstate", () => {
+   window.addEventListener("popstate", () => {
+      if (isHandlingBack) return;
       isHandlingBack = true;
 
       const pdfViewer = document.getElementById("pdfViewerOverlay");
