@@ -545,20 +545,14 @@
       gap: 5px;
     }
 
-    /* Photo Capture & Thumbnails */
-    .photo-capture-row {
-      display: flex;
-      gap: 10px;
-    }
-
     .photo-capture-btn {
-      flex: 1;
+      width: 100%;
       background-color: #eff6ff;
       color: #1d4ed8;
       border: 1.5px dashed #60a5fa;
-      padding: 13px 10px;
+      padding: 14px;
       border-radius: 12px;
-      font-size: 0.95rem;
+      font-size: 1rem;
       font-weight: 700;
       cursor: pointer;
       display: flex;
@@ -581,6 +575,7 @@
       border: 1.5px solid #cbd5e1;
       background: #0f172a;
       aspect-ratio: 4 / 3;
+      cursor: pointer;
     }
 
     .photo-thumb-card img {
@@ -935,7 +930,7 @@
 <body>
 
   <div class="app-container">
-    <div class="version-banner" id="versionBanner">App Version: v10.0 (Watermarked Photos + Offline Queue)</div>
+    <div class="version-banner" id="versionBanner">App Version: v3.2 (Gallery Watermark + Details Stay Open)</div>
 
     <header class="app-header">
       <div class="header-top">
@@ -1149,7 +1144,7 @@
     <div class="pdf-canvas-container" id="pdfCanvasContainer"></div>
   </div>
 
-  <!-- Edit Modal With Watermarked Camera Capture & Mark as Completed Toggle -->
+  <!-- Edit Modal With Gallery Photo Watermarking & Mark as Completed Toggle -->
   <div class="modal-backdrop" id="editModal" onclick="closeEditModal(event)">
     <div class="modal-sheet" onclick="event.stopPropagation()">
       <div class="modal-header">
@@ -1189,10 +1184,10 @@
           <input type="hidden" id="capturedMapUrl">
         </div>
 
-       <!-- Gallery Photo Selection & Auto-Watermarking Section -->
+        <!-- Gallery Photo Selection & Auto-Watermarking Section -->
         <div class="form-group">
           <label>Field Photos (Auto-Watermarked)</label>
-          <button type="button" class="photo-capture-btn" style="width: 100%; padding: 14px;" onclick="document.getElementById('galleryPhotoInput').click()">
+          <button type="button" class="photo-capture-btn" onclick="document.getElementById('galleryPhotoInput').click()">
             <i class="fa-solid fa-images" style="font-size: 18px;"></i> Select Photos from Gallery
           </button>
           <input type="file" id="galleryPhotoInput" accept="image/*" multiple style="display: none;" onchange="handlePhotoFilesSelected(this)">
@@ -1215,9 +1210,9 @@
   <div class="toast" id="toast">Message</div>
 
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxaJGnzHEL212pPGTJ1w827lsnrjWU0fD9qC6jKt49dKRa0RGchS8BI7wPgXn11KHAy/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkGdLOJVVD1fV4y0tSh4HU1u0x-D8206Og2HNoQC6p40V3K9PzJ4DpnLbZJmsvBnwn/exec";
 
-    // >>> REPLACE THESE TWO VALUES WITH YOUR CLOUDINARY DETAILS <<<
+    // Cloudinary Configuration
     const CLOUDINARY_CLOUD_NAME = "dpeuqcbtm";
     const CLOUDINARY_UPLOAD_PRESET = "beneficiary_pdfs";
 
@@ -1233,7 +1228,7 @@
     let pdfTargetRecord = null;
     let pendingAddPromise = null;
     let returnToTabAfterPdf = false;
-    let draftWatermarkedPhotos = []; // Holds newly captured watermarked blobs before Save
+    let draftWatermarkedPhotos = [];
     let isSyncingPhotos = false;
 
     function showToast(msg) {
@@ -1255,7 +1250,7 @@
     }
 
     // =========================================================================
-    // INDEXEDDB OFFLINE PHOTO STORE (Supports hundreds of MB offline)
+    // INDEXEDDB OFFLINE PHOTO STORE
     // =========================================================================
     function openPhotoDB() {
       return new Promise((resolve, reject) => {
@@ -1331,14 +1326,12 @@
       } catch (e) {}
     }
 
-    // Background / Online Queue Processor for Photos
     async function processOfflinePhotoQueue(manualTrigger = false) {
       if (isSyncingPhotos) return;
       if (!navigator.onLine) {
         if (manualTrigger) showToast("Offline: Photos will upload when internet returns.");
         return;
       }
-      if (CLOUDINARY_CLOUD_NAME === "YOUR_CLOUD_NAME") return;
 
       const pendingPhotos = await getPendingPhotosIDB();
       if (pendingPhotos.length === 0) {
@@ -1358,7 +1351,7 @@
           formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 
           const res = await fetch(
-            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`,
             { method: "POST", body: formData }
           );
           const data = await res.json();
@@ -1368,9 +1361,11 @@
             item.cloudUrl = data.secure_url;
             await savePhotoToIDB(item);
 
-            const rec = records.find(r => String(r.id) === String(item.recordId));
+            const rec = records.find(r => String(r.id).trim() === String(item.recordId).trim());
             if (rec) {
-              const existing = rec.photoUrls ? rec.photoUrls.split(',').map(u => u.trim()).filter(Boolean) : [];
+              const existing = rec.photoUrls
+                ? String(rec.photoUrls).split(',').map(u => u.trim()).filter(Boolean)
+                : [];
               if (!existing.includes(data.secure_url)) {
                 existing.push(data.secure_url);
                 rec.photoUrls = existing.join(', ');
@@ -1389,21 +1384,25 @@
           const rec = records.find(r => r.id === recId);
           if (rec) {
             try {
-              await fetch(SCRIPT_URL, {
+              const sheetRes = await fetch(SCRIPT_URL, {
                 method: "POST",
                 redirect: "follow",
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify({ action: "update", record: rec })
               });
+              const sheetJson = await sheetRes.json();
+              if (!sheetJson.success) {
+                addToSyncQueue("update", rec);
+              }
             } catch (e) {
               addToSyncQueue("update", rec);
             }
           }
         }
         if (selectedRecord && updatedRecordIds.has(selectedRecord.id)) {
-          renderDetailsView();
+          await renderDetailsView();
         }
-        showToast("Field photos synced to Cloud & Sheet!");
+        showToast("Photo link(s) saved to Column P!");
       }
 
       isSyncingPhotos = false;
@@ -1411,9 +1410,8 @@
     }
 
     // =========================================================================
-    // HTML5 CANVAS PHOTO WATERMARKING ENGINE
+    // MEMORY-SAFE HTML5 CANVAS PHOTO WATERMARKING ENGINE
     // =========================================================================
-   // Memory-safe image downscaling + watermarking (prevents phone hangs on large camera photos)
     async function watermarkImageFile(file, record, gpsUrl) {
       let sourceBitmap = null;
       let fallbackImg = null;
@@ -1421,7 +1419,6 @@
       let origW = 0;
       let origH = 0;
 
-      // Use createImageBitmap when available to decode at target size without full-res RAM spike
       if (window.createImageBitmap) {
         try {
           sourceBitmap = await createImageBitmap(file);
@@ -1508,7 +1505,6 @@
 
       return new Promise((resolve, reject) => {
         canvas.toBlob((blob) => {
-          // Release canvas memory immediately
           canvas.width = 0;
           canvas.height = 0;
           if (!blob) return reject(new Error("Image compression failed"));
@@ -1520,110 +1516,11 @@
       });
     }
 
-    function buildFormattedReportText(rec) {
-      return `📋 *BENEFICIARY VERIFICATION*
-━━━━━━━━━━━━━━━━━━━
-👤 *Name:* ${rec.name}
-📁 *File No:* ${rec.fileNo}
-💼 *Work:* ${rec.work}
-📍 *Place:* ${rec.place} (${rec.ward})
-📞 *Mobile:* ${rec.mobile}
-🏠 *Address:* ${rec.address}
-🛣️ *Route:* ${rec.route}
-📌 *Eligibility:* ${rec.eligibility}
-⚡ *Status:* ${rec.status}${rec.status === 'Completed' && rec.visitDate ? `\n📅 *Completed Date:* ${rec.visitDate}` : ''}
-📝 *Remarks:* ${rec.remarks}${rec.location ? `\n🌐 *Location:* ${rec.location}` : ''}${rec.pdfUrl ? `\n📄 *Document:* ${rec.pdfUrl}` : ''}`;
-    }
-
-    async function copyDetailsOnly() {
-      if (!selectedRecord) return;
-      const text = buildFormattedReportText(selectedRecord);
-      try {
-        await navigator.clipboard.writeText(text);
-        showToast("Verification details copied!");
-      } catch (err) {
-        alert("Copy failed. Long-press the details text to copy.");
-      }
-    }
-
-    async function handleEditSubmit(e) {
-      e.preventDefault();
-      if (!selectedRecord) return;
-
-      const saveBtn = document.getElementById('btnSaveEditSubmit');
-      saveBtn.disabled = true;
-      saveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
-
-      const isCompleted = document.getElementById('markCompletedToggle').checked;
-      const oldStatus = selectedRecord.status;
-      const newStatus = isCompleted ? "Completed" : "Pending";
-
-      selectedRecord.status = newStatus;
-      selectedRecord.eligibility = document.getElementById('editEligibility').value;
-      selectedRecord.remarks = document.getElementById('editRemarks').value.trim();
-      const loc = document.getElementById('capturedMapUrl').value;
-      if (loc) selectedRecord.location = loc;
-
-      if (isCompleted) {
-        selectedRecord.visitDate = new Date().toISOString().split('T')[0];
-      } else {
-        selectedRecord.visitDate = "";
-      }
-
-      const hasNewPhotos = draftWatermarkedPhotos.length > 0;
-      for (const draft of draftWatermarkedPhotos) {
-        await savePhotoToIDB({
-          photoId: draft.photoId,
-          recordId: String(selectedRecord.id),
-          fileName: draft.fileName,
-          blob: draft.blob,
-          uploaded: false,
-          cloudUrl: ""
-        });
-      }
-      await updatePhotoQueueBadge();
-
-      saveLocalRecords();
-      populatePlaceFilter();
-
-      // Close ONLY the edit modal while keeping the Full Details Page open!
-      closeEditModalDirect();
-      document.getElementById('fullDetailsPage').classList.add('active');
-      await renderDetailsView();
-
-      saveBtn.disabled = false;
-      saveBtn.innerHTML = `<span class="material-symbols-outlined">save</span> Save & Sync to Sheet`;
-
-      if (navigator.onLine) {
-        if (hasNewPhotos) {
-          showToast("Uploading photo(s) & syncing Sheet...");
-          await processOfflinePhotoQueue(false);
-          await renderDetailsView();
-        } else {
-          showToast(oldStatus !== newStatus ? `Moving to ${newStatus} Sheet...` : "Updating Sheet...");
-          try {
-            await fetch(SCRIPT_URL, {
-              method: "POST",
-              redirect: "follow",
-              headers: { "Content-Type": "text/plain;charset=utf-8" },
-              body: JSON.stringify({ action: "update", record: selectedRecord })
-            });
-            showToast(oldStatus !== newStatus ? `Moved to ${newStatus}! Details ready to copy.` : "Updated! Details ready to copy.");
-          } catch (err) {
-            addToSyncQueue("update", selectedRecord);
-            showToast("Saved offline. Sync pending.");
-          }
-        }
-      } else {
-        addToSyncQueue("update", selectedRecord);
-        showToast("Saved offline! Details & photos ready on screen.");
-      }
-    }
     async function handlePhotoFilesSelected(input) {
       if (!input.files || input.files.length === 0 || !selectedRecord) return;
 
       const currentGps = document.getElementById('capturedMapUrl').value || selectedRecord.location || "";
-      showToast("Watermarking photo(s)...");
+      showToast("Watermarking selected photo(s)...");
 
       for (const file of Array.from(input.files)) {
         try {
@@ -2089,11 +1986,6 @@
         return;
       }
 
-      if (CLOUDINARY_CLOUD_NAME === "YOUR_CLOUD_NAME") {
-        alert("Please set your CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET in index.html first.");
-        return;
-      }
-
       const file = fileInput.files[0];
       const submitBtn = document.getElementById('btnUploadPdfSubmit');
       submitBtn.disabled = true;
@@ -2160,7 +2052,6 @@
       const content = document.getElementById('fullDetailsContent');
       const safeName = String(selectedRecord.name || '').replace(/'/g, "\\'");
 
-      // Gather both offline IDB photos and synced Cloudinary URLs
       const idbPhotos = await getPhotosByRecordIDB(selectedRecord.id);
       const cloudUrls = selectedRecord.photoUrls
         ? selectedRecord.photoUrls.split(',').map(u => u.trim()).filter(Boolean)
@@ -2283,6 +2174,10 @@
           <strong style="color: #1e3a8a; font-size: 0.95rem;">Remarks:</strong>
           <p style="color: #334155; font-size: 1rem; margin-top: 6px; line-height: 1.4;">${selectedRecord.remarks || ''}</p>
         </div>
+
+        <button type="button" onclick="copyDetailsOnly()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: #1e3a8a; color: #ffffff; border: none; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer;">
+          <i class="fa-solid fa-copy"></i> Copy Verification Details
+        </button>
       `;
     }
 
@@ -2444,6 +2339,7 @@
 
       const saveBtn = document.getElementById('btnSaveEditSubmit');
       saveBtn.disabled = true;
+      saveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
 
       const isCompleted = document.getElementById('markCompletedToggle').checked;
       const oldStatus = selectedRecord.status;
@@ -2461,7 +2357,7 @@
         selectedRecord.visitDate = "";
       }
 
-      // Persist newly captured watermarked photos into IndexedDB first
+      const hasNewPhotos = draftWatermarkedPhotos.length > 0;
       for (const draft of draftWatermarkedPhotos) {
         await savePhotoToIDB({
           photoId: draft.photoId,
@@ -2476,60 +2372,78 @@
 
       saveLocalRecords();
       populatePlaceFilter();
-      saveBtn.disabled = false;
+
+      // Close ONLY the edit modal while keeping the Full Details Page open
       closeEditModalDirect();
-      renderDetailsView();
+      document.getElementById('fullDetailsPage').classList.add('active');
+      await renderDetailsView();
+
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = `<span class="material-symbols-outlined">save</span> Save & Sync to Sheet`;
 
       if (navigator.onLine) {
-        showToast(oldStatus !== newStatus ? `Moving to ${newStatus} Sheet...` : "Updating Sheet...");
-        try {
-          await fetch(SCRIPT_URL, {
-            method: "POST",
-            redirect: "follow",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({ action: "update", record: selectedRecord })
-          });
-          showToast(oldStatus !== newStatus ? `Moved to ${newStatus}!` : "Updated!");
-        } catch (err) {
-          addToSyncQueue("update", selectedRecord);
-          showToast("Saved offline. Sync pending.");
+        if (hasNewPhotos) {
+          showToast("Uploading photo(s) & syncing Sheet...");
+          await processOfflinePhotoQueue(false);
+          await renderDetailsView();
+        } else {
+          showToast(oldStatus !== newStatus ? `Moving to ${newStatus} Sheet...` : "Updating Sheet...");
+          try {
+            await fetch(SCRIPT_URL, {
+              method: "POST",
+              redirect: "follow",
+              headers: { "Content-Type": "text/plain;charset=utf-8" },
+              body: JSON.stringify({ action: "update", record: selectedRecord })
+            });
+            showToast(oldStatus !== newStatus ? `Moved to ${newStatus}! Details ready to copy.` : "Updated! Details ready to copy.");
+          } catch (err) {
+            addToSyncQueue("update", selectedRecord);
+            showToast("Saved offline. Sync pending.");
+          }
         }
-        // Trigger background Cloudinary upload for any queued photos
-        processOfflinePhotoQueue(false);
       } else {
         addToSyncQueue("update", selectedRecord);
-        showToast("Saved offline in phone! Will sync when online.");
+        showToast("Saved offline! Details & photos ready on screen.");
       }
     }
 
-    // =========================================================================
-    // NATIVE TELEGRAM SHARE (WATERMARKED PHOTOS + TEXT TOGETHER)
-    // =========================================================================
+    function buildFormattedReportText(rec) {
+      return `📋 *BENEFICIARY VERIFICATION*
+━━━━━━━━━━━━━━━━━━━
+👤 *Name:* ${rec.name}
+📁 *File No:* ${rec.fileNo}
+💼 *Work:* ${rec.work}
+📍 *Place:* ${rec.place} (${rec.ward})
+📞 *Mobile:* ${rec.mobile}
+🏠 *Address:* ${rec.address}
+🛣️ *Route:* ${rec.route}
+📌 *Eligibility:* ${rec.eligibility}
+⚡ *Status:* ${rec.status}${rec.status === 'Completed' && rec.visitDate ? `\n📅 *Completed Date:* ${rec.visitDate}` : ''}
+📝 *Remarks:* ${rec.remarks}${rec.location ? `\n🌐 *Location:* ${rec.location}` : ''}${rec.pdfUrl ? `\n📄 *Document:* ${rec.pdfUrl}` : ''}`;
+    }
+
+    async function copyDetailsOnly() {
+      if (!selectedRecord) return;
+      const text = buildFormattedReportText(selectedRecord);
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast("Verification details copied!");
+      } catch (err) {
+        alert("Copy failed. Long-press the details text to copy.");
+      }
+    }
+
     async function shareToTelegramWithPhotos() {
       if (!selectedRecord) return;
 
-      const formattedText = 
-`📋 *BENEFICIARY VERIFICATION*
-━━━━━━━━━━━━━━━━━━━
-👤 *Name:* ${selectedRecord.name}
-📁 *File No:* ${selectedRecord.fileNo}
-💼 *Work:* ${selectedRecord.work}
-📍 *Place:* ${selectedRecord.place} (${selectedRecord.ward})
-📞 *Mobile:* ${selectedRecord.mobile}
-🏠 *Address:* ${selectedRecord.address}
-🛣️ *Route:* ${selectedRecord.route}
-📌 *Eligibility:* ${selectedRecord.eligibility}
-⚡ *Status:* ${selectedRecord.status}${selectedRecord.status === 'Completed' && selectedRecord.visitDate ? `\n📅 *Completed Date:* ${selectedRecord.visitDate}` : ''}
-📝 *Remarks:* ${selectedRecord.remarks}${selectedRecord.location ? `\n🌐 *Location:* ${selectedRecord.location}` : ''}${selectedRecord.pdfUrl ? `\n📄 *Document:* ${selectedRecord.pdfUrl}` : ''}`;
+      const formattedText = buildFormattedReportText(selectedRecord);
 
-      // Copy text to clipboard as backup so officer can paste caption if Telegram strips text on multi-image share
       try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
           await navigator.clipboard.writeText(formattedText);
         }
       } catch (_) {}
 
-      // Collect watermarked File objects from IndexedDB (works 100% offline!)
       const photoFiles = [];
       try {
         const idbPhotos = await getPhotosByRecordIDB(selectedRecord.id);
@@ -2537,7 +2451,6 @@
           photoFiles.push(new File([p.blob], p.fileName, { type: "image/jpeg" }));
         }
 
-        // If no local IDB copy exists but Cloudinary URLs are in Sheet, fetch them when online
         if (photoFiles.length === 0 && selectedRecord.photoUrls && navigator.onLine) {
           const urls = selectedRecord.photoUrls.split(',').map(u => u.trim()).filter(Boolean);
           for (let i = 0; i < urls.length; i++) {
@@ -2551,7 +2464,6 @@
         console.warn("Could not prepare photo files for share:", err);
       }
 
-      // Use Native Web Share API with files + text when supported on mobile
       if (photoFiles.length > 0 && navigator.canShare && navigator.canShare({ files: photoFiles })) {
         try {
           showToast("Text copied! Select Telegram to send photos + text...");
@@ -2562,11 +2474,10 @@
           });
           return;
         } catch (shareErr) {
-          if (shareErr.name === 'AbortError') return; // User cancelled share sheet
+          if (shareErr.name === 'AbortError') return;
         }
       }
 
-      // Fallback: Open Telegram app directly with formatted text
       showToast("Copied! Opening Telegram app...");
       const encodedText = encodeURIComponent(formattedText);
       const appUri = `tg://msg_url?url=%20&text=${encodedText}`;
