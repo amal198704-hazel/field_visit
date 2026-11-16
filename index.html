@@ -47,6 +47,17 @@
       box-shadow: 0 0 20px rgba(0,0,0,0.06);
     }
 
+    .version-banner {
+      background-color: #1e3a8a;
+      color: #ffffff;
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      letter-spacing: 0.3px;
+      transition: opacity 0.4s ease;
+    }
+
     .app-header {
       background-color: #ffffff;
       border-bottom: 2px solid #e2e8f0;
@@ -61,26 +72,42 @@
       align-items: center;
       justify-content: space-between;
       margin-bottom: 12px;
+      gap: 8px;
     }
 
     .app-header h2 {
-      font-size: 1.35rem;
+      font-size: 1.3rem;
       font-weight: 700;
       color: #1e3a8a;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
-.version-banner {
-      background-color: #1e3a8a;
-      color: #ffffff;
-      text-align: center;
-      font-size: 0.78rem;
-      font-weight: 600;
-      padding: 5px 10px;
-      letter-spacing: 0.3px;
-      transition: opacity 0.4s ease;
+
+    .header-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
+
+    .sync-queue-btn {
+      display: none;
+      align-items: center;
+      gap: 5px;
+      background-color: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fcd34d;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 9999px;
+      cursor: pointer;
+    }
+
+    .sync-queue-btn.visible {
+      display: inline-flex;
+    }
+
     .network-badge {
       display: inline-flex;
       align-items: center;
@@ -478,7 +505,7 @@
     }
 
     .full-page-body {
-      padding: 22px 18px;
+      padding: 22px 18px 40px 18px;
       display: flex;
       flex-direction: column;
       gap: 18px;
@@ -518,6 +545,80 @@
       gap: 5px;
     }
 
+    /* Photo Capture & Thumbnails */
+    .photo-capture-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .photo-capture-btn {
+      flex: 1;
+      background-color: #eff6ff;
+      color: #1d4ed8;
+      border: 1.5px dashed #60a5fa;
+      padding: 13px 10px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .photo-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .photo-thumb-card {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1.5px solid #cbd5e1;
+      background: #0f172a;
+      aspect-ratio: 4 / 3;
+    }
+
+    .photo-thumb-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .photo-thumb-badge {
+      position: absolute;
+      bottom: 4px;
+      left: 4px;
+      background: rgba(15, 23, 42, 0.8);
+      color: #fbbf24;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    .photo-thumb-remove {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: rgba(220, 38, 38, 0.9);
+      color: #ffffff;
+      border: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+
     .modal-backdrop {
       position: fixed;
       top: 0;
@@ -549,7 +650,7 @@
       padding: 24px 20px;
       box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.12);
       animation: slideUp 0.2s ease-out;
-      max-height: 88vh;
+      max-height: 90vh;
       overflow-y: auto;
     }
 
@@ -834,14 +935,21 @@
 <body>
 
   <div class="app-container">
+    <div class="version-banner" id="versionBanner">App Version: v3.0 (Watermarked Photos + Offline Queue)</div>
+
     <header class="app-header">
-      <div class="version-banner" id="versionBanner">App Version: v2.5 (Cloudinary + PDF.js)</div>
       <div class="header-top">
         <h2 id="topHeaderTitle">
           <span class="material-symbols-outlined" style="color: #2563eb;">pending_actions</span>
           Pending Tasks
         </h2>
-        <span class="network-badge network-online" id="networkBadge">Online</span>
+        <div class="header-badges">
+          <button type="button" class="sync-queue-btn" id="photoQueueBadge" onclick="processOfflinePhotoQueue(true)" title="Tap to sync queued photos">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span id="photoQueueCount">0</span>
+          </button>
+          <span class="network-badge network-online" id="networkBadge">Online</span>
+        </div>
       </div>
 
       <!-- Filters Section -->
@@ -945,7 +1053,7 @@
       </div>
 
       <div class="header-action-group">
-        <button class="header-btn telegram" onclick="copyAndShareTelegram()" title="Copy & Share to Telegram">
+        <button class="header-btn telegram" onclick="shareToTelegramWithPhotos()" title="Share Text & Photos to Telegram">
           <span class="material-symbols-outlined">send</span>
         </button>
         <button class="header-btn edit" onclick="openEditModal()" title="Edit Details">
@@ -1038,7 +1146,7 @@
     <div class="pdf-canvas-container" id="pdfCanvasContainer"></div>
   </div>
 
-  <!-- Edit Modal With Mark as Completed Toggle -->
+  <!-- Edit Modal With Watermarked Camera Capture & Mark as Completed Toggle -->
   <div class="modal-backdrop" id="editModal" onclick="closeEditModal(event)">
     <div class="modal-sheet" onclick="event.stopPropagation()">
       <div class="modal-header">
@@ -1078,12 +1186,29 @@
           <input type="hidden" id="capturedMapUrl">
         </div>
 
+        <!-- In-App Camera / Photo Watermarking Section -->
+        <div class="form-group">
+          <label>Field Photos (Auto-Watermarked)</label>
+          <div class="photo-capture-row">
+            <button type="button" class="photo-capture-btn" onclick="document.getElementById('cameraPhotoInput').click()">
+              <i class="fa-solid fa-camera"></i> Take Photo
+            </button>
+            <button type="button" class="photo-capture-btn" style="background: #f8fafc; color: #334155; border-color: #94a3b8;" onclick="document.getElementById('galleryPhotoInput').click()">
+              <i class="fa-solid fa-images"></i> Gallery
+            </button>
+          </div>
+          <input type="file" id="cameraPhotoInput" accept="image/*" capture="environment" style="display: none;" onchange="handlePhotoFilesSelected(this)">
+          <input type="file" id="galleryPhotoInput" accept="image/*" multiple style="display: none;" onchange="handlePhotoFilesSelected(this)">
+
+          <div class="photo-preview-grid" id="editPhotoPreviewGrid"></div>
+        </div>
+
         <div class="form-group">
           <label>Remarks</label>
           <textarea id="editRemarks" rows="3" placeholder="Enter inspection notes, document remarks..." required></textarea>
         </div>
 
-        <button type="submit" class="submit-btn">
+        <button type="submit" id="btnSaveEditSubmit" class="submit-btn">
           <span class="material-symbols-outlined">save</span> Save & Sync to Sheet
         </button>
       </form>
@@ -1091,7 +1216,8 @@
   </div>
 
   <div class="toast" id="toast">Message</div>
-<script>
+
+  <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxaJGnzHEL212pPGTJ1w827lsnrjWU0fD9qC6jKt49dKRa0RGchS8BI7wPgXn11KHAy/exec";
 
     // >>> REPLACE THESE TWO VALUES WITH YOUR CLOUDINARY DETAILS <<<
@@ -1110,6 +1236,8 @@
     let pdfTargetRecord = null;
     let pendingAddPromise = null;
     let returnToTabAfterPdf = false;
+    let draftWatermarkedPhotos = []; // Holds newly captured watermarked blobs before Save
+    let isSyncingPhotos = false;
 
     function showToast(msg) {
       const toast = document.getElementById('toast');
@@ -1129,12 +1257,345 @@
       }
     }
 
+    // =========================================================================
+    // INDEXEDDB OFFLINE PHOTO STORE (Supports hundreds of MB offline)
+    // =========================================================================
+    function openPhotoDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open("BeneficiaryPhotoDB", 1);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains("photos")) {
+            const store = db.createObjectStore("photos", { keyPath: "photoId" });
+            store.createIndex("recordId", "recordId", { unique: false });
+            store.createIndex("uploaded", "uploaded", { unique: false });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function savePhotoToIDB(photoObj) {
+      const db = await openPhotoDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction("photos", "readwrite");
+        tx.objectStore("photos").put(photoObj);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    async function getPhotosByRecordIDB(recordId) {
+      const db = await openPhotoDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction("photos", "readonly");
+        const index = tx.objectStore("photos").index("recordId");
+        const req = index.getAll(String(recordId));
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function getPendingPhotosIDB() {
+      const db = await openPhotoDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction("photos", "readonly");
+        const req = tx.objectStore("photos").getAll();
+        req.onsuccess = () => {
+          const all = req.result || [];
+          resolve(all.filter(p => !p.uploaded));
+        };
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function deletePhotoFromIDB(photoId) {
+      const db = await openPhotoDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction("photos", "readwrite");
+        tx.objectStore("photos").delete(photoId);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    async function updatePhotoQueueBadge() {
+      try {
+        const pending = await getPendingPhotosIDB();
+        const badge = document.getElementById('photoQueueBadge');
+        const countEl = document.getElementById('photoQueueCount');
+        if (pending.length > 0) {
+          countEl.innerText = `${pending.length} Photo${pending.length > 1 ? 's' : ''}`;
+          badge.classList.add('visible');
+        } else {
+          badge.classList.remove('visible');
+        }
+      } catch (e) {}
+    }
+
+    // Background / Online Queue Processor for Photos
+    async function processOfflinePhotoQueue(manualTrigger = false) {
+      if (isSyncingPhotos) return;
+      if (!navigator.onLine) {
+        if (manualTrigger) showToast("Offline: Photos will upload when internet returns.");
+        return;
+      }
+      if (CLOUDINARY_CLOUD_NAME === "YOUR_CLOUD_NAME") return;
+
+      const pendingPhotos = await getPendingPhotosIDB();
+      if (pendingPhotos.length === 0) {
+        if (manualTrigger) showToast("All photos are already synced!");
+        return;
+      }
+
+      isSyncingPhotos = true;
+      if (manualTrigger) showToast(`Uploading ${pendingPhotos.length} queued photo(s)...`);
+
+      const updatedRecordIds = new Set();
+
+      for (const item of pendingPhotos) {
+        try {
+          const formData = new FormData();
+          formData.append("file", item.blob, item.fileName);
+          formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+          const res = await fetch(
+            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+            { method: "POST", body: formData }
+          );
+          const data = await res.json();
+
+          if (res.ok && data.secure_url) {
+            item.uploaded = true;
+            item.cloudUrl = data.secure_url;
+            await savePhotoToIDB(item);
+
+            const rec = records.find(r => String(r.id) === String(item.recordId));
+            if (rec) {
+              const existing = rec.photoUrls ? rec.photoUrls.split(',').map(u => u.trim()).filter(Boolean) : [];
+              if (!existing.includes(data.secure_url)) {
+                existing.push(data.secure_url);
+                rec.photoUrls = existing.join(', ');
+                updatedRecordIds.add(rec.id);
+              }
+            }
+          }
+        } catch (err) {
+          console.warn("Photo upload deferred:", err);
+        }
+      }
+
+      if (updatedRecordIds.size > 0) {
+        saveLocalRecords();
+        for (const recId of updatedRecordIds) {
+          const rec = records.find(r => r.id === recId);
+          if (rec) {
+            try {
+              await fetch(SCRIPT_URL, {
+                method: "POST",
+                redirect: "follow",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ action: "update", record: rec })
+              });
+            } catch (e) {
+              addToSyncQueue("update", rec);
+            }
+          }
+        }
+        if (selectedRecord && updatedRecordIds.has(selectedRecord.id)) {
+          renderDetailsView();
+        }
+        showToast("Field photos synced to Cloud & Sheet!");
+      }
+
+      isSyncingPhotos = false;
+      await updatePhotoQueueBadge();
+    }
+
+    // =========================================================================
+    // HTML5 CANVAS PHOTO WATERMARKING ENGINE
+    // =========================================================================
+    function watermarkImageFile(file, record, gpsUrl) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+
+        img.onload = () => {
+          URL.revokeObjectURL(objectUrl);
+
+          // Resize to max 1280px width/height for fast upload & crisp legibility
+          const maxDim = 1280;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Draw semi-transparent dark metadata bar at bottom
+          const fontSize = Math.max(15, Math.round(width * 0.023));
+          const lineHeight = Math.round(fontSize * 1.42);
+          const padding = Math.round(fontSize * 0.8);
+          const barHeight = (lineHeight * 3) + (padding * 1.5);
+
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+          ctx.fillRect(0, height - barHeight, width, barHeight);
+
+          // Accent stripe on left of banner
+          ctx.fillStyle = '#10b981';
+          ctx.fillRect(0, height - barHeight, Math.max(6, Math.round(width * 0.008)), barHeight);
+
+          const nowStr = new Date().toLocaleString('en-IN', {
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', hour12: true
+          });
+
+          let gpsText = "GPS: Not Captured";
+          if (gpsUrl && gpsUrl.includes('q=')) {
+            gpsText = "GPS: " + gpsUrl.split('q=')[1];
+          }
+
+          const line1 = `${record.fileNo || 'NO-FILE'}  |  ${record.name || 'Beneficiary'}`;
+          const line2 = `Place: ${record.place || '-'} (Ward ${record.ward || '-'})  |  ${record.work || ''}`;
+          const line3 = `${nowStr}  |  ${gpsText}`;
+
+          ctx.font = `bold ${fontSize}px sans-serif`;
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillText(line1, padding + 6, height - barHeight + padding + fontSize * 0.85);
+
+          ctx.font = `${Math.round(fontSize * 0.9)}px sans-serif`;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(line2, padding + 6, height - barHeight + padding + lineHeight + fontSize * 0.85);
+
+          ctx.fillStyle = '#a7f3d0';
+          ctx.fillText(line3, padding + 6, height - barHeight + padding + (lineHeight * 2) + fontSize * 0.85);
+
+          canvas.toBlob((blob) => {
+            if (!blob) return reject(new Error("Canvas compression failed"));
+            const safeFileNo = String(record.fileNo || 'DOC').replace(/[^a-zA-Z0-9_-]/g, '_');
+            const safeName = String(record.name || 'Beneficiary').replace(/[^a-zA-Z0-9_-]/g, '_');
+            const fileName = `${safeFileNo}_${safeName}_${Date.now().toString().slice(-4)}.jpg`;
+            resolve({ blob, fileName, previewUrl: URL.createObjectURL(blob) });
+          }, 'image/jpeg', 0.84);
+        };
+
+        img.onerror = () => {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error("Unable to read selected image"));
+        };
+
+        img.src = objectUrl;
+      });
+    }
+
+    async function handlePhotoFilesSelected(input) {
+      if (!input.files || input.files.length === 0 || !selectedRecord) return;
+
+      const currentGps = document.getElementById('capturedMapUrl').value || selectedRecord.location || "";
+      showToast("Watermarking photo(s)...");
+
+      for (const file of Array.from(input.files)) {
+        try {
+          const stamped = await watermarkImageFile(file, selectedRecord, currentGps);
+          draftWatermarkedPhotos.push({
+            photoId: "PHOTO_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+            recordId: String(selectedRecord.id),
+            fileName: stamped.fileName,
+            blob: stamped.blob,
+            previewUrl: stamped.previewUrl,
+            uploaded: false,
+            cloudUrl: ""
+          });
+        } catch (err) {
+          alert("Photo error: " + err.message);
+        }
+      }
+
+      input.value = '';
+      renderEditModalPhotos();
+      showToast("Photo(s) stamped with Name, File No & GPS!");
+    }
+
+    async function renderEditModalPhotos() {
+      const grid = document.getElementById('editPhotoPreviewGrid');
+      if (!grid || !selectedRecord) return;
+      grid.innerHTML = '';
+
+      const savedIDBPhotos = await getPhotosByRecordIDB(selectedRecord.id);
+
+      savedIDBPhotos.forEach(p => {
+        const thumbUrl = URL.createObjectURL(p.blob);
+        const card = document.createElement('div');
+        card.className = 'photo-thumb-card';
+        card.innerHTML = `
+          <img src="${thumbUrl}" alt="${p.fileName}">
+          <span class="photo-thumb-badge">${p.uploaded ? 'Synced' : 'Queued Offline'}</span>
+          <button type="button" class="photo-thumb-remove" title="Delete Photo" onclick="removeSavedPhoto('${p.photoId}')">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        `;
+        grid.appendChild(card);
+      });
+
+      draftWatermarkedPhotos.forEach((p, idx) => {
+        const card = document.createElement('div');
+        card.className = 'photo-thumb-card';
+        card.innerHTML = `
+          <img src="${p.previewUrl}" alt="${p.fileName}">
+          <span class="photo-thumb-badge" style="color: #60a5fa;">Ready to Save</span>
+          <button type="button" class="photo-thumb-remove" title="Remove" onclick="removeDraftPhoto(${idx})">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function removeDraftPhoto(index) {
+      const removed = draftWatermarkedPhotos.splice(index, 1)[0];
+      if (removed && removed.previewUrl) URL.revokeObjectURL(removed.previewUrl);
+      renderEditModalPhotos();
+    }
+
+    async function removeSavedPhoto(photoId) {
+      await deletePhotoFromIDB(photoId);
+      await updatePhotoQueueBadge();
+      renderEditModalPhotos();
+      renderDetailsView();
+    }
+
+    // =========================================================================
+    // APP LIFECYCLE & NETWORK LISTENERS
+    // =========================================================================
     window.addEventListener('DOMContentLoaded', () => {
+      const vBanner = document.getElementById('versionBanner');
+      if (vBanner) {
+        setTimeout(() => {
+          vBanner.style.opacity = '0';
+          setTimeout(() => { vBanner.style.display = 'none'; }, 400);
+        }, 5000);
+      }
+
       updateNetworkStatus();
       loadLocalRecords();
+      updatePhotoQueueBadge();
+
       if (navigator.onLine) {
         syncOfflineQueue();
-        fetchRecordsFromSheet();
+        fetchRecordsFromSheet().then(() => processOfflinePhotoQueue(false));
       } else {
         showToast("Working in Offline Mode");
       }
@@ -1142,14 +1603,14 @@
 
     window.addEventListener('online', () => {
       updateNetworkStatus();
-      showToast("Online restored! Syncing data...");
+      showToast("Online restored! Syncing records & photos...");
       syncOfflineQueue();
-      fetchRecordsFromSheet();
+      fetchRecordsFromSheet().then(() => processOfflinePhotoQueue(false));
     });
 
     window.addEventListener('offline', () => {
       updateNetworkStatus();
-      showToast("Offline mode. Saved to mobile storage.");
+      showToast("Offline mode. Records & photos saved safely on phone.");
     });
 
     function loadLocalRecords() {
@@ -1161,7 +1622,6 @@
           renderList(currentTab);
         }
       } catch (err) {
-        console.error("Local storage read error:", err);
         records = [];
       }
     }
@@ -1216,7 +1676,6 @@
       }
     }
 
-    // Safely convert r.place to String before calling .trim()
     function populatePlaceFilter() {
       const select = document.getElementById('placeFilterSelect');
       const placesSet = new Set();
@@ -1267,7 +1726,7 @@
       renderList(currentTab);
     }
 
-    function switchTab(tab) {
+    function switchTab(tab, fromPopState = false) {
       currentTab = tab;
       document.getElementById('tabPending').classList.toggle('active', tab === 'Pending');
       document.getElementById('tabAdd').classList.toggle('active', tab === 'Add');
@@ -1289,6 +1748,10 @@
         filterWrapper.style.display = 'flex';
         topTitle.innerHTML = `<span class="material-symbols-outlined" style="color: #2563eb;">${tab === 'Pending' ? 'pending_actions' : 'task_alt'}</span> ${tab} Records`;
         renderList(tab);
+      }
+
+      if (!fromPopState && tab !== 'Pending') {
+        pushAppHistory('tab_' + tab);
       }
     }
 
@@ -1412,7 +1875,8 @@
         eligibility: "Pending Verification",
         visitDate: newStatus === "Completed" ? new Date().toISOString().split('T')[0] : "",
         location: "",
-        pdfUrl: ""
+        pdfUrl: "",
+        photoUrls: ""
       };
 
       records.unshift(newRecord);
@@ -1447,10 +1911,12 @@
       }
 
       document.getElementById('askPdfModal').classList.add('open');
+      pushAppHistory('askPdfModal');
     }
 
-    function declinePdfUpload() {
+    function declinePdfUpload(fromPopState = false) {
       document.getElementById('askPdfModal').classList.remove('open');
+      if (!fromPopState && history.state?.view === 'askPdfModal') history.back();
       if (pdfTargetRecord && returnToTabAfterPdf) {
         switchTab(pdfTargetRecord.status);
       }
@@ -1469,10 +1935,12 @@
       document.getElementById('pdfFileInput').value = '';
       document.getElementById('pdfFileLabel').innerText = 'Tap to select PDF file';
       document.getElementById('pdfUploadModal').classList.add('open');
+      pushAppHistory('pdfUploadModal');
     }
 
-    function closePdfUploadModal() {
+    function closePdfUploadModal(fromPopState = false) {
       document.getElementById('pdfUploadModal').classList.remove('open');
+      if (!fromPopState && history.state?.view === 'pdfUploadModal') history.back();
       if (pdfTargetRecord && returnToTabAfterPdf) {
         switchTab(pdfTargetRecord.status);
       }
@@ -1493,7 +1961,7 @@
       }
     }
 
-   async function handlePdfUploadSubmit(e) {
+    async function handlePdfUploadSubmit(e) {
       e.preventDefault();
       const fileInput = document.getElementById('pdfFileInput');
       if (!fileInput.files || !fileInput.files[0] || !pdfTargetRecord) return;
@@ -1536,8 +2004,6 @@
         pdfTargetRecord.pdfUrl = cloudData.secure_url;
         saveLocalRecords();
 
-        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving link to Sheet...`;
-
         const sheetRes = await fetch(SCRIPT_URL, {
           method: "POST",
           redirect: "follow",
@@ -1548,14 +2014,13 @@
         const sheetResult = await sheetRes.json();
         if (!sheetResult.success) {
           addToSyncQueue("update", pdfTargetRecord);
-          throw new Error("Uploaded to Cloudinary, but Sheet save failed: " + (sheetResult.error || sheetResult.message));
         }
 
         if (selectedRecord && selectedRecord.id === pdfTargetRecord.id) {
           renderDetailsView();
         }
         renderList(currentTab);
-        showToast("PDF uploaded & saved to Column O in Sheet!");
+        showToast("PDF uploaded & saved to Google Sheet!");
       } catch (err) {
         alert("PDF Upload Error: " + err.message);
       } finally {
@@ -1564,16 +2029,58 @@
         closePdfUploadModal();
       }
     }
+
     function openFullDetails(item) {
       selectedRecord = item;
       renderDetailsView();
       document.getElementById('fullDetailsPage').classList.add('active');
+      pushAppHistory('details');
     }
 
-    function renderDetailsView() {
+    async function renderDetailsView() {
       if (!selectedRecord) return;
       const content = document.getElementById('fullDetailsContent');
       const safeName = String(selectedRecord.name || '').replace(/'/g, "\\'");
+
+      // Gather both offline IDB photos and synced Cloudinary URLs
+      const idbPhotos = await getPhotosByRecordIDB(selectedRecord.id);
+      const cloudUrls = selectedRecord.photoUrls
+        ? selectedRecord.photoUrls.split(',').map(u => u.trim()).filter(Boolean)
+        : [];
+
+      let photosHtml = '';
+      if (idbPhotos.length > 0 || cloudUrls.length > 0) {
+        const thumbs = [];
+        idbPhotos.forEach(p => {
+          const url = p.cloudUrl || URL.createObjectURL(p.blob);
+          thumbs.push(`
+            <div class="photo-thumb-card" onclick="window.open('${url}', '_blank')">
+              <img src="${url}" alt="${p.fileName}">
+              <span class="photo-thumb-badge">${p.uploaded ? 'Synced' : 'Local / Queued'}</span>
+            </div>
+          `);
+        });
+        cloudUrls.forEach(url => {
+          if (!idbPhotos.some(p => p.cloudUrl === url)) {
+            thumbs.push(`
+              <div class="photo-thumb-card" onclick="window.open('${url}', '_blank')">
+                <img src="${url}" alt="Field Photo">
+                <span class="photo-thumb-badge">Cloud</span>
+              </div>
+            `);
+          }
+        });
+
+        photosHtml = `
+          <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; padding: 14px; border-radius: 12px;">
+            <strong style="color: #1e3a8a; font-size: 0.95rem; display: block; margin-bottom: 8px;">
+              <i class="fa-solid fa-camera" style="margin-right: 6px;"></i>Captured Field Photos (${thumbs.length})
+            </strong>
+            <div class="photo-preview-grid">${thumbs.join('')}</div>
+          </div>
+        `;
+      }
+
       content.innerHTML = `
         <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 14px; padding: 18px; margin-bottom: 6px;">
           <h2 style="font-size: 1.4rem; font-weight: 700; color: #065f46;">${selectedRecord.name || ''}</h2>
@@ -1652,7 +2159,9 @@
           </div>
         ` : ''}
 
-        <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; padding: 14px; border-radius: 12px; margin-top: 4px;">
+        ${photosHtml}
+
+        <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; padding: 14px; border-radius: 12px;">
           <strong style="color: #1e3a8a; font-size: 0.95rem;">Remarks:</strong>
           <p style="color: #334155; font-size: 1rem; margin-top: 6px; line-height: 1.4;">${selectedRecord.remarks || ''}</p>
         </div>
@@ -1663,10 +2172,12 @@
       if (!selectedRecord) return;
       document.getElementById('editRouteInput').value = selectedRecord.route || '';
       document.getElementById('routeEditModal').classList.add('open');
+      pushAppHistory('routeModal');
     }
 
-    function closeRouteEditModal() {
+    function closeRouteEditModal(fromPopState = false) {
       document.getElementById('routeEditModal').classList.remove('open');
+      if (!fromPopState && history.state?.view === 'routeModal') history.back();
     }
 
     async function handleRouteEditSubmit(e) {
@@ -1711,6 +2222,7 @@
       statusEl.style.display = 'block';
       statusEl.innerText = 'Loading PDF document...';
       overlay.classList.add('open');
+      pushAppHistory('pdfViewer');
 
       try {
         const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
@@ -1732,19 +2244,22 @@
       }
     }
 
-    function closePdfViewer() {
+    function closePdfViewer(fromPopState = false) {
       document.getElementById('pdfViewerOverlay').classList.remove('open');
       document.getElementById('pdfCanvasContainer').innerHTML = '';
+      if (!fromPopState && history.state?.view === 'pdfViewer') history.back();
     }
 
-    function closeDetailsPage() {
+    function closeDetailsPage(fromPopState = false) {
       document.getElementById('fullDetailsPage').classList.remove('active');
+      if (!fromPopState && history.state?.view === 'details') history.back();
       renderList(currentTab);
     }
 
     function openEditModal() {
       if (!selectedRecord) return;
       
+      draftWatermarkedPhotos = [];
       document.getElementById('markCompletedToggle').checked = (selectedRecord.status === "Completed");
       document.getElementById('editEligibility').value = selectedRecord.eligibility || "Eligible";
       document.getElementById('editRemarks').value = selectedRecord.remarks || "";
@@ -1760,11 +2275,16 @@
         gpsText.innerText = "Capture Current Location";
       }
 
+      renderEditModalPhotos();
       document.getElementById('editModal').classList.add('open');
+      pushAppHistory('editModal');
     }
 
-    function closeEditModalDirect() {
+    function closeEditModalDirect(fromPopState = false) {
+      draftWatermarkedPhotos.forEach(p => { if (p.previewUrl) URL.revokeObjectURL(p.previewUrl); });
+      draftWatermarkedPhotos = [];
       document.getElementById('editModal').classList.remove('open');
+      if (!fromPopState && history.state?.view === 'editModal') history.back();
     }
 
     function closeEditModal(e) {
@@ -1804,6 +2324,9 @@
       e.preventDefault();
       if (!selectedRecord) return;
 
+      const saveBtn = document.getElementById('btnSaveEditSubmit');
+      saveBtn.disabled = true;
+
       const isCompleted = document.getElementById('markCompletedToggle').checked;
       const oldStatus = selectedRecord.status;
       const newStatus = isCompleted ? "Completed" : "Pending";
@@ -1820,8 +2343,22 @@
         selectedRecord.visitDate = "";
       }
 
+      // Persist newly captured watermarked photos into IndexedDB first
+      for (const draft of draftWatermarkedPhotos) {
+        await savePhotoToIDB({
+          photoId: draft.photoId,
+          recordId: String(selectedRecord.id),
+          fileName: draft.fileName,
+          blob: draft.blob,
+          uploaded: false,
+          cloudUrl: ""
+        });
+      }
+      await updatePhotoQueueBadge();
+
       saveLocalRecords();
       populatePlaceFilter();
+      saveBtn.disabled = false;
       closeEditModalDirect();
       renderDetailsView();
 
@@ -1834,18 +2371,23 @@
             headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({ action: "update", record: selectedRecord })
           });
-          showToast(oldStatus !== newStatus ? `Successfully moved to ${newStatus}!` : "Updated successfully!");
+          showToast(oldStatus !== newStatus ? `Moved to ${newStatus}!` : "Updated!");
         } catch (err) {
           addToSyncQueue("update", selectedRecord);
           showToast("Saved offline. Sync pending.");
         }
+        // Trigger background Cloudinary upload for any queued photos
+        processOfflinePhotoQueue(false);
       } else {
         addToSyncQueue("update", selectedRecord);
-        showToast("Saved offline. Will move sheet when back online!");
+        showToast("Saved offline in phone! Will sync when online.");
       }
     }
 
-   function copyAndShareTelegram() {
+    // =========================================================================
+    // NATIVE TELEGRAM SHARE (WATERMARKED PHOTOS + TEXT TOGETHER)
+    // =========================================================================
+    async function shareToTelegramWithPhotos() {
       if (!selectedRecord) return;
 
       const formattedText = 
@@ -1862,36 +2404,128 @@
 ⚡ *Status:* ${selectedRecord.status}${selectedRecord.status === 'Completed' && selectedRecord.visitDate ? `\n📅 *Completed Date:* ${selectedRecord.visitDate}` : ''}
 📝 *Remarks:* ${selectedRecord.remarks}${selectedRecord.location ? `\n🌐 *Location:* ${selectedRecord.location}` : ''}${selectedRecord.pdfUrl ? `\n📄 *Document:* ${selectedRecord.pdfUrl}` : ''}`;
 
-      const launchTelegram = () => {
-        const encodedText = encodeURIComponent(formattedText);
-        // Native Android/iOS URI scheme launches the Telegram app directly
-        const appUri = `tg://msg_url?url=%20&text=${encodedText}`;
-        // Web fallback includes required 'url' parameter so it never lands on telegram.org
-        const webFallback = `https://t.me/share/url?url=${encodeURIComponent(selectedRecord.location || selectedRecord.pdfUrl || 'https://t.me')}&text=${encodedText}`;
+      // Copy text to clipboard as backup so officer can paste caption if Telegram strips text on multi-image share
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(formattedText);
+        }
+      } catch (_) {}
 
-        window.location.href = appUri;
+      // Collect watermarked File objects from IndexedDB (works 100% offline!)
+      const photoFiles = [];
+      try {
+        const idbPhotos = await getPhotosByRecordIDB(selectedRecord.id);
+        for (const p of idbPhotos) {
+          photoFiles.push(new File([p.blob], p.fileName, { type: "image/jpeg" }));
+        }
 
-        // If Telegram app isn't installed (e.g., on desktop), fall back to web share after 1.2s
-        setTimeout(() => {
-          if (!document.hidden) {
-            window.open(webFallback, '_blank', 'noopener,noreferrer');
+        // If no local IDB copy exists but Cloudinary URLs are in Sheet, fetch them when online
+        if (photoFiles.length === 0 && selectedRecord.photoUrls && navigator.onLine) {
+          const urls = selectedRecord.photoUrls.split(',').map(u => u.trim()).filter(Boolean);
+          for (let i = 0; i < urls.length; i++) {
+            const resp = await fetch(urls[i]);
+            const blob = await resp.blob();
+            const safeName = `${selectedRecord.fileNo}_${selectedRecord.name}_${i + 1}.jpg`.replace(/[^a-zA-Z0-9._-]/g, '_');
+            photoFiles.push(new File([blob], safeName, { type: "image/jpeg" }));
           }
-        }, 1200);
-      };
+        }
+      } catch (err) {
+        console.warn("Could not prepare photo files for share:", err);
+      }
 
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(formattedText)
-          .then(() => {
-            showToast("Copied! Opening Telegram app...");
-            setTimeout(launchTelegram, 350);
-          })
-          .catch(() => {
-            launchTelegram();
+      // Use Native Web Share API with files + text when supported on mobile
+      if (photoFiles.length > 0 && navigator.canShare && navigator.canShare({ files: photoFiles })) {
+        try {
+          showToast("Text copied! Select Telegram to send photos + text...");
+          await navigator.share({
+            files: photoFiles,
+            title: `${selectedRecord.fileNo} - ${selectedRecord.name}`,
+            text: formattedText
           });
-      } else {
-        launchTelegram();
+          return;
+        } catch (shareErr) {
+          if (shareErr.name === 'AbortError') return; // User cancelled share sheet
+        }
+      }
+
+      // Fallback: Open Telegram app directly with formatted text
+      showToast("Copied! Opening Telegram app...");
+      const encodedText = encodeURIComponent(formattedText);
+      const appUri = `tg://msg_url?url=%20&text=${encodedText}`;
+      const webFallback = `https://t.me/share/url?url=${encodeURIComponent(selectedRecord.location || selectedRecord.pdfUrl || 'https://t.me')}&text=${encodedText}`;
+
+      window.location.href = appUri;
+      setTimeout(() => {
+        if (!document.hidden) {
+          window.open(webFallback, '_blank', 'noopener,noreferrer');
+        }
+      }, 1200);
+    }
+
+    // =========================================================================
+    // MOBILE HARDWARE / GESTURE BACK BUTTON HANDLER
+    // =========================================================================
+    let isHandlingBack = false;
+
+    function pushAppHistory(viewName) {
+      if (!isHandlingBack) {
+        history.pushState({ view: viewName }, "");
       }
     }
+
+    window.addEventListener("popstate", () => {
+      isHandlingBack = true;
+
+      const pdfViewer = document.getElementById("pdfViewerOverlay");
+      if (pdfViewer && pdfViewer.classList.contains("open")) {
+        closePdfViewer(true);
+        isHandlingBack = false;
+        return;
+      }
+
+      const editModal = document.getElementById("editModal");
+      if (editModal && editModal.classList.contains("open")) {
+        closeEditModalDirect(true);
+        isHandlingBack = false;
+        return;
+      }
+
+      const routeModal = document.getElementById("routeEditModal");
+      if (routeModal && routeModal.classList.contains("open")) {
+        closeRouteEditModal(true);
+        isHandlingBack = false;
+        return;
+      }
+
+      const pdfUploadModal = document.getElementById("pdfUploadModal");
+      if (pdfUploadModal && pdfUploadModal.classList.contains("open")) {
+        closePdfUploadModal(true);
+        isHandlingBack = false;
+        return;
+      }
+
+      const askPdfModal = document.getElementById("askPdfModal");
+      if (askPdfModal && askPdfModal.classList.contains("open")) {
+        declinePdfUpload(true);
+        isHandlingBack = false;
+        return;
+      }
+
+      const detailsPage = document.getElementById("fullDetailsPage");
+      if (detailsPage && detailsPage.classList.contains("active")) {
+        closeDetailsPage(true);
+        isHandlingBack = false;
+        return;
+      }
+
+      if (currentTab !== "Pending") {
+        switchTab("Pending", true);
+        isHandlingBack = false;
+        return;
+      }
+
+      isHandlingBack = false;
+    });
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -1900,163 +2534,6 @@
           .catch((err) => console.error('PWA Reg Error:', err));
       });
     }
-  const vBanner = document.getElementById('versionBanner');
-      if (vBanner) {
-        setTimeout(() => {
-          vBanner.style.opacity = '0';
-          setTimeout(() => { vBanner.style.display = 'none'; }, 400);
-        }, 5000);
-      }
   </script>
-  <script>
-  // --- Mobile Hardware / Gesture Back Button Handler ---
-  let isHandlingBack = false;
-
-  // Push a history entry whenever a view or modal opens
-  function pushAppHistory(viewName) {
-    if (!isHandlingBack) {
-      history.pushState({ view: viewName }, "");
-    }
-  }
-
-  // Listen for the Android / browser Back button
-  window.addEventListener("popstate", (event) => {
-    isHandlingBack = true;
-
-    // 1. Close PDF.js Viewer if open
-    const pdfViewer = document.getElementById("pdfViewerOverlay");
-    if (pdfViewer && pdfViewer.classList.contains("open")) {
-      closePdfViewer(true);
-      isHandlingBack = false;
-      return;
-    }
-
-    // 2. Close Edit Modal if open
-    const editModal = document.getElementById("editModal");
-    if (editModal && editModal.classList.contains("open")) {
-      closeEditModalDirect(true);
-      isHandlingBack = false;
-      return;
-    }
-
-    // 3. Close Route & Landmark Edit Modal if open
-    const routeModal = document.getElementById("routeEditModal");
-    if (routeModal && routeModal.classList.contains("open")) {
-      closeRouteEditModal(true);
-      isHandlingBack = false;
-      return;
-    }
-
-    // 4. Close PDF Uploader or Ask-PDF Modal if open
-    const pdfUploadModal = document.getElementById("pdfUploadModal");
-    if (pdfUploadModal && pdfUploadModal.classList.contains("open")) {
-      closePdfUploadModal(true);
-      isHandlingBack = false;
-      return;
-    }
-    const askPdfModal = document.getElementById("askPdfModal");
-    if (askPdfModal && askPdfModal.classList.contains("open")) {
-      declinePdfUpload(true);
-      isHandlingBack = false;
-      return;
-    }
-
-    // 5. Close Full Details Page if open
-    const detailsPage = document.getElementById("fullDetailsPage");
-    if (detailsPage && detailsPage.classList.contains("active")) {
-      closeDetailsPage(true);
-      isHandlingBack = false;
-      return;
-    }
-
-    // 6. If on 'Add' or 'Completed' tab, return to 'Pending' tab
-    if (currentTab !== "Pending") {
-      switchTab("Pending", true);
-      isHandlingBack = false;
-      return;
-    }
-
-    isHandlingBack = false;
-  });
-
-  // --- Wrap existing open/close/tab functions to sync with History ---
-  const _origOpenFullDetails = openFullDetails;
-  openFullDetails = function(item) {
-    _origOpenFullDetails(item);
-    pushAppHistory("details");
-  };
-
-  const _origCloseDetailsPage = closeDetailsPage;
-  closeDetailsPage = function(fromPopState = false) {
-    _origCloseDetailsPage();
-    if (!fromPopState && history.state?.view === "details") {
-      history.back();
-    }
-  };
-
-  const _origOpenEditModal = openEditModal;
-  openEditModal = function() {
-    _origOpenEditModal();
-    pushAppHistory("editModal");
-  };
-
-  const _origCloseEditModalDirect = closeEditModalDirect;
-  closeEditModalDirect = function(fromPopState = false) {
-    _origCloseEditModalDirect();
-    if (!fromPopState && history.state?.view === "editModal") {
-      history.back();
-    }
-  };
-
-  const _origOpenRouteEditModal = openRouteEditModal;
-  openRouteEditModal = function() {
-    _origOpenRouteEditModal();
-    pushAppHistory("routeModal");
-  };
-
-  const _origCloseRouteEditModal = closeRouteEditModal;
-  closeRouteEditModal = function(fromPopState = false) {
-    _origCloseRouteEditModal();
-    if (!fromPopState && history.state?.view === "routeModal") {
-      history.back();
-    }
-  };
-
-  const _origOpenPdfViewer = openPdfViewer;
-  openPdfViewer = function(pdfUrl, beneficiaryName) {
-    _origOpenPdfViewer(pdfUrl, beneficiaryName);
-    pushAppHistory("pdfViewer");
-  };
-
-  const _origClosePdfViewer = closePdfViewer;
-  closePdfViewer = function(fromPopState = false) {
-    _origClosePdfViewer();
-    if (!fromPopState && history.state?.view === "pdfViewer") {
-      history.back();
-    }
-  };
-
-  const _origOpenPdfUploaderFor = openPdfUploaderFor;
-  openPdfUploaderFor = function(record, switchTabAfter) {
-    _origOpenPdfUploaderFor(record, switchTabAfter);
-    pushAppHistory("pdfUploadModal");
-  };
-
-  const _origClosePdfUploadModal = closePdfUploadModal;
-  closePdfUploadModal = function(fromPopState = false) {
-    _origClosePdfUploadModal();
-    if (!fromPopState && history.state?.view === "pdfUploadModal") {
-      history.back();
-    }
-  };
-
-  const _origSwitchTab = switchTab;
-  switchTab = function(tab, fromPopState = false) {
-    _origSwitchTab(tab);
-    if (!fromPopState && tab !== "Pending") {
-      pushAppHistory("tab_" + tab);
-    }
-  };
-</script>
 </body>
 </html>
