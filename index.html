@@ -1889,5 +1889,155 @@ ${selectedRecord.location ? `🌐 *Location:* ${selectedRecord.location}` : ''}`
         }, 5000);
       }
   </script>
+  <script>
+  // --- Mobile Hardware / Gesture Back Button Handler ---
+  let isHandlingBack = false;
+
+  // Push a history entry whenever a view or modal opens
+  function pushAppHistory(viewName) {
+    if (!isHandlingBack) {
+      history.pushState({ view: viewName }, "");
+    }
+  }
+
+  // Listen for the Android / browser Back button
+  window.addEventListener("popstate", (event) => {
+    isHandlingBack = true;
+
+    // 1. Close PDF.js Viewer if open
+    const pdfViewer = document.getElementById("pdfViewerOverlay");
+    if (pdfViewer && pdfViewer.classList.contains("open")) {
+      closePdfViewer(true);
+      isHandlingBack = false;
+      return;
+    }
+
+    // 2. Close Edit Modal if open
+    const editModal = document.getElementById("editModal");
+    if (editModal && editModal.classList.contains("open")) {
+      closeEditModalDirect(true);
+      isHandlingBack = false;
+      return;
+    }
+
+    // 3. Close Route & Landmark Edit Modal if open
+    const routeModal = document.getElementById("routeEditModal");
+    if (routeModal && routeModal.classList.contains("open")) {
+      closeRouteEditModal(true);
+      isHandlingBack = false;
+      return;
+    }
+
+    // 4. Close PDF Uploader or Ask-PDF Modal if open
+    const pdfUploadModal = document.getElementById("pdfUploadModal");
+    if (pdfUploadModal && pdfUploadModal.classList.contains("open")) {
+      closePdfUploadModal(true);
+      isHandlingBack = false;
+      return;
+    }
+    const askPdfModal = document.getElementById("askPdfModal");
+    if (askPdfModal && askPdfModal.classList.contains("open")) {
+      declinePdfUpload(true);
+      isHandlingBack = false;
+      return;
+    }
+
+    // 5. Close Full Details Page if open
+    const detailsPage = document.getElementById("fullDetailsPage");
+    if (detailsPage && detailsPage.classList.contains("active")) {
+      closeDetailsPage(true);
+      isHandlingBack = false;
+      return;
+    }
+
+    // 6. If on 'Add' or 'Completed' tab, return to 'Pending' tab
+    if (currentTab !== "Pending") {
+      switchTab("Pending", true);
+      isHandlingBack = false;
+      return;
+    }
+
+    isHandlingBack = false;
+  });
+
+  // --- Wrap existing open/close/tab functions to sync with History ---
+  const _origOpenFullDetails = openFullDetails;
+  openFullDetails = function(item) {
+    _origOpenFullDetails(item);
+    pushAppHistory("details");
+  };
+
+  const _origCloseDetailsPage = closeDetailsPage;
+  closeDetailsPage = function(fromPopState = false) {
+    _origCloseDetailsPage();
+    if (!fromPopState && history.state?.view === "details") {
+      history.back();
+    }
+  };
+
+  const _origOpenEditModal = openEditModal;
+  openEditModal = function() {
+    _origOpenEditModal();
+    pushAppHistory("editModal");
+  };
+
+  const _origCloseEditModalDirect = closeEditModalDirect;
+  closeEditModalDirect = function(fromPopState = false) {
+    _origCloseEditModalDirect();
+    if (!fromPopState && history.state?.view === "editModal") {
+      history.back();
+    }
+  };
+
+  const _origOpenRouteEditModal = openRouteEditModal;
+  openRouteEditModal = function() {
+    _origOpenRouteEditModal();
+    pushAppHistory("routeModal");
+  };
+
+  const _origCloseRouteEditModal = closeRouteEditModal;
+  closeRouteEditModal = function(fromPopState = false) {
+    _origCloseRouteEditModal();
+    if (!fromPopState && history.state?.view === "routeModal") {
+      history.back();
+    }
+  };
+
+  const _origOpenPdfViewer = openPdfViewer;
+  openPdfViewer = function(pdfUrl, beneficiaryName) {
+    _origOpenPdfViewer(pdfUrl, beneficiaryName);
+    pushAppHistory("pdfViewer");
+  };
+
+  const _origClosePdfViewer = closePdfViewer;
+  closePdfViewer = function(fromPopState = false) {
+    _origClosePdfViewer();
+    if (!fromPopState && history.state?.view === "pdfViewer") {
+      history.back();
+    }
+  };
+
+  const _origOpenPdfUploaderFor = openPdfUploaderFor;
+  openPdfUploaderFor = function(record, switchTabAfter) {
+    _origOpenPdfUploaderFor(record, switchTabAfter);
+    pushAppHistory("pdfUploadModal");
+  };
+
+  const _origClosePdfUploadModal = closePdfUploadModal;
+  closePdfUploadModal = function(fromPopState = false) {
+    _origClosePdfUploadModal();
+    if (!fromPopState && history.state?.view === "pdfUploadModal") {
+      history.back();
+    }
+  };
+
+  const _origSwitchTab = switchTab;
+  switchTab = function(tab, fromPopState = false) {
+    _origSwitchTab(tab);
+    if (!fromPopState && tab !== "Pending") {
+      pushAppHistory("tab_" + tab);
+    }
+  };
+</script>
 </body>
 </html>
