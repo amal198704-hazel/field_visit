@@ -623,6 +623,11 @@
       width: 100%;
     }
 
+    .submit-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
     .secondary-btn {
       background-color: #f1f5f9;
       color: #334155;
@@ -744,7 +749,6 @@
       transform: translateX(22px);
     }
 
-    /* PDF.js Viewer Modal */
     .pdf-viewer-overlay {
       position: fixed;
       inset: 0;
@@ -843,7 +847,7 @@
         <div class="place-filter-box">
           <span class="material-symbols-outlined">filter_alt</span>
           <select id="placeFilterSelect" onchange="handlePlaceFilter(this.value)">
-            <option value="ALL">All Places / Areas (Pending)</option>
+            <option value="ALL">All Places / Areas</option>
           </select>
         </div>
       </div>
@@ -982,7 +986,7 @@
     </div>
   </div>
 
-  <!-- PDF Uploader Modal -->
+  <!-- PDF Uploader Modal (Cloudinary) -->
   <div class="modal-backdrop center-modal" id="pdfUploadModal">
     <div class="modal-card">
       <div class="modal-header">
@@ -1001,7 +1005,7 @@
           <input type="file" id="pdfFileInput" accept="application/pdf" style="display: none;" onchange="onPdfFileSelected(this)" required>
         </div>
         <button type="submit" id="btnUploadPdfSubmit" class="submit-btn">
-          <i class="fa-solid fa-cloud-arrow-up"></i> Upload to Google Sheets
+          <i class="fa-solid fa-cloud-arrow-up"></i> Upload & Save Link
         </button>
       </form>
     </div>
@@ -1078,8 +1082,12 @@
 
   <div class="toast" id="toast">Message</div>
 
-<script>
+  <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkGdLOJVVD1fV4y0tSh4HU1u0x-D8206Og2HNoQC6p40V3K9PzJ4DpnLbZJmsvBnwn/exec";
+
+    // >>> REPLACE THESE TWO VALUES WITH YOUR CLOUDINARY DETAILS <<<
+    const CLOUDINARY_CLOUD_NAME = "dpeuqcbtm";
+    const CLOUDINARY_UPLOAD_PRESET = "beneficiary_pdfs";
 
     if (window.pdfjsLib) {
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -1309,8 +1317,8 @@
         card.className = 'cards';
         card.onclick = () => openFullDetails(item);
 
-        const pdfBtnHtml = item.pdfId ? `
-          <button type="button" class="btn-icon btn-pdf-card" title="View PDF" onclick="event.stopPropagation(); openPdfViewer('${item.pdfId}', '${item.name.replace(/'/g, "\\'")}')">
+        const pdfBtnHtml = item.pdfUrl ? `
+          <button type="button" class="btn-icon btn-pdf-card" title="View PDF" onclick="event.stopPropagation(); openPdfViewer('${item.pdfUrl}', '${item.name.replace(/'/g, "\\'")}')">
             <i class="fa-solid fa-file-pdf"></i>
             <span>PDF</span>
           </button>
@@ -1386,7 +1394,7 @@
         eligibility: "Pending Verification",
         visitDate: newStatus === "Completed" ? new Date().toISOString().split('T')[0] : "",
         location: "",
-        pdfId: ""
+        pdfUrl: ""
       };
 
       records.unshift(newRecord);
@@ -1407,8 +1415,6 @@
           .then(data => {
             if (data.success) {
               showToast(`Saved to ${newRecord.status} Sheet!`);
-            } else {
-              alert("Sheet Save Error: " + (data.error || data.message));
             }
           })
           .catch(() => {
@@ -1458,8 +1464,8 @@
     function onPdfFileSelected(input) {
       if (input.files && input.files[0]) {
         const file = input.files[0];
-        if (file.size > 15 * 1024 * 1024) {
-          alert("File is too large (" + (file.size / 1024 / 1024).toFixed(1) + " MB). Please select a PDF under 15 MB.");
+        if (file.size > 10 * 1024 * 1024) {
+          alert("File is too large (" + (file.size / 1024 / 1024).toFixed(1) + " MB). Cloudinary free plan limit is 10 MB.");
           input.value = '';
           document.getElementById('pdfFileLabel').innerText = 'Tap to select PDF file';
           return;
@@ -1468,82 +1474,71 @@
       }
     }
 
+    // Direct Cloudinary Upload + Sync URL to Google Sheets
     async function handlePdfUploadSubmit(e) {
       e.preventDefault();
       const fileInput = document.getElementById('pdfFileInput');
       if (!fileInput.files || !fileInput.files[0] || !pdfTargetRecord) return;
 
       if (!navigator.onLine) {
-        alert("Internet connection is required to upload PDF to Google Sheets.");
+        alert("Internet connection is required to upload PDF to Cloudinary.");
+        return;
+      }
+
+      if (CLOUDINARY_CLOUD_NAME === "YOUR_CLOUD_NAME") {
+        alert("Please set your CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET in index.html first.");
         return;
       }
 
       const file = fileInput.files[0];
       const submitBtn = document.getElementById('btnUploadPdfSubmit');
       submitBtn.disabled = true;
-      submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading PDF...`;
+      submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading to Cloudinary...`;
 
-      // Wait for the initial record row to finish saving before linking PDF ID
-      if (pendingAddPromise) {
-        try { await pendingAddPromise; } catch (_) {}
-      }
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 
-      const reader = new FileReader();
-      reader.onload = async function() {
-        try {
-          const base64Data = reader.result.split(',')[1];
-          const res = await fetch(SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({
-              action: "uploadPdf",
-              recordId: pdfTargetRecord.id,
-              fileName: `${pdfTargetRecord.fileNo.replace(/[\/\\]/g, '_')}_${pdfTargetRecord.name}.pdf`,
-              base64Data: base64Data
-            })
-          });
+        // Using /auto/upload handles PDFs cleanly and returns a standard secure_url
+        const cloudinaryRes = await fetch(
+          `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`,
+          { method: "POST", body: formData }
+        );
 
-          const rawText = await res.text();
-          let result;
-          try {
-            result = JSON.parse(rawText);
-          } catch (parseErr) {
-            throw new Error("Apps Script returned an unexpected response. Make sure DriveApp permissions are authorized and a New Version is deployed.");
-          }
+        const cloudData = await cloudinaryRes.json();
 
-          if (result.success && result.pdfId) {
-            pdfTargetRecord.pdfId = result.pdfId;
-            try {
-              localStorage.setItem('pdf_cache_' + result.pdfId, base64Data);
-            } catch (quotaErr) {}
-            saveLocalRecords();
-
-            // If Sheet didn't link during uploadPdf, sync full row now
-            if (!result.linkedToSheet) {
-              await fetch(SCRIPT_URL, {
-                method: "POST",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({ action: "update", record: pdfTargetRecord })
-              });
-            }
-
-            if (selectedRecord && selectedRecord.id === pdfTargetRecord.id) {
-              renderDetailsView();
-            }
-            renderList(currentTab);
-            showToast("PDF uploaded & linked to Sheet!");
-          } else {
-            alert("PDF Upload Failed: " + (result.error || result.message || "Unknown server error"));
-          }
-        } catch (err) {
-          alert("Upload Error: " + err.message);
-        } finally {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Upload to Google Sheets`;
-          closePdfUploadModal();
+        if (!cloudinaryRes.ok || !cloudData.secure_url) {
+          throw new Error(cloudData.error?.message || "Cloudinary upload failed");
         }
-      };
-      reader.readAsDataURL(file);
+
+        // Wait for initial 'add' row to finish before updating row with pdfUrl
+        if (pendingAddPromise) {
+          try { await pendingAddPromise; } catch (_) {}
+        }
+
+        pdfTargetRecord.pdfUrl = cloudData.secure_url;
+        saveLocalRecords();
+
+        // Save Cloudinary secure_url to Google Sheets Column O
+        await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "update", record: pdfTargetRecord })
+        });
+
+        if (selectedRecord && selectedRecord.id === pdfTargetRecord.id) {
+          renderDetailsView();
+        }
+        renderList(currentTab);
+        showToast("PDF uploaded & saved to Google Sheet!");
+      } catch (err) {
+        alert("PDF Upload Error: " + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Upload & Save Link`;
+        closePdfUploadModal();
+      }
     }
 
     function openFullDetails(item) {
@@ -1612,8 +1607,8 @@
 
         <!-- Attach, Replace, or View PDF from Details Page -->
         <div style="display: flex; gap: 10px;">
-          ${selectedRecord.pdfId ? `
-            <button type="button" onclick="openPdfViewer('${selectedRecord.pdfId}', '${selectedRecord.name.replace(/'/g, "\\'")}')" style="flex: 1.4; display: flex; align-items: center; justify-content: center; gap: 8px; background: #fef2f2; color: #dc2626; border: 1.5px solid #fecaca; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer;">
+          ${selectedRecord.pdfUrl ? `
+            <button type="button" onclick="openPdfViewer('${selectedRecord.pdfUrl}', '${selectedRecord.name.replace(/'/g, "\\'")}')" style="flex: 1.4; display: flex; align-items: center; justify-content: center; gap: 8px; background: #fef2f2; color: #dc2626; border: 1.5px solid #fecaca; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer;">
               <i class="fa-solid fa-file-pdf" style="font-size: 19px;"></i> View PDF
             </button>
             <button type="button" onclick="openPdfUploaderFor(selectedRecord, false)" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: #f8fafc; color: #334155; border: 1.5px solid #cbd5e1; padding: 14px; border-radius: 12px; font-weight: 600; font-size: 0.95rem; cursor: pointer;">
@@ -1682,7 +1677,8 @@
       }
     }
 
-    async function openPdfViewer(pdfId, beneficiaryName) {
+    // Direct PDF.js rendering from Cloudinary URL
+    async function openPdfViewer(pdfUrl, beneficiaryName) {
       const overlay = document.getElementById('pdfViewerOverlay');
       const statusEl = document.getElementById('pdfViewerStatus');
       const container = document.getElementById('pdfCanvasContainer');
@@ -1694,32 +1690,7 @@
       overlay.classList.add('open');
 
       try {
-        let base64Data = localStorage.getItem('pdf_cache_' + pdfId);
-
-        if (!base64Data) {
-          if (!navigator.onLine) {
-            statusEl.innerText = 'Offline: Connect to internet to load this PDF.';
-            return;
-          }
-          const res = await fetch(`${SCRIPT_URL}?action=getPdf&pdfId=${encodeURIComponent(pdfId)}`);
-          const result = await res.json();
-          if (!result.success || !result.base64) {
-            statusEl.innerText = 'Unable to load PDF from Google Drive.';
-            return;
-          }
-          base64Data = result.base64;
-          try {
-            localStorage.setItem('pdf_cache_' + pdfId, base64Data);
-          } catch (quotaErr) {}
-        }
-
-        const binaryString = atob(base64Data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+        const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
         statusEl.style.display = 'none';
 
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
@@ -1734,7 +1705,7 @@
           container.appendChild(canvas);
         }
       } catch (err) {
-        statusEl.innerText = 'Failed to render PDF.';
+        statusEl.innerHTML = `Unable to render PDF inline.<br><a href="${pdfUrl}" target="_blank" style="color: #60a5fa; text-decoration: underline; display: inline-block; margin-top: 12px;">Open PDF in Browser</a>`;
       }
     }
 
