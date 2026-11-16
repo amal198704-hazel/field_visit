@@ -1078,10 +1078,9 @@
 
   <div class="toast" id="toast">Message</div>
 
-  <script>
+<script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkGdLOJVVD1fV4y0tSh4HU1u0x-D8206Og2HNoQC6p40V3K9PzJ4DpnLbZJmsvBnwn/exec";
 
-    // Configure PDF.js worker
     if (window.pdfjsLib) {
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
@@ -1091,13 +1090,15 @@
     let searchQuery = '';
     let selectedPlace = 'ALL';
     let selectedRecord = null;
-    let newlyCreatedRecord = null;
+    let pdfTargetRecord = null;
+    let pendingAddPromise = null;
+    let returnToTabAfterPdf = false;
 
     function showToast(msg) {
       const toast = document.getElementById('toast');
       toast.innerText = msg;
       toast.style.display = 'block';
-      setTimeout(() => { toast.style.display = 'none'; }, 2600);
+      setTimeout(() => { toast.style.display = 'none'; }, 2800);
     }
 
     function updateNetworkStatus() {
@@ -1163,6 +1164,7 @@
         try {
           await fetch(SCRIPT_URL, {
             method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({ action: item.action, record: item.record })
           });
         } catch (err) {
@@ -1191,7 +1193,6 @@
       }
     }
 
-    // 1. Only show places from Pending Lists
     function populatePlaceFilter() {
       const select = document.getElementById('placeFilterSelect');
       const placesSet = new Set();
@@ -1220,7 +1221,6 @@
       select.value = selectedPlace;
     }
 
-    // 2. Search with Clear (Close) Button
     function handleSearch(val) {
       searchQuery = val.trim().toLowerCase();
       const clearBtn = document.getElementById('searchClearBtn');
@@ -1309,7 +1309,6 @@
         card.className = 'cards';
         card.onclick = () => openFullDetails(item);
 
-        // 5. Small PDF button on main card when PDF exists
         const pdfBtnHtml = item.pdfId ? `
           <button type="button" class="btn-icon btn-pdf-card" title="View PDF" onclick="event.stopPropagation(); openPdfViewer('${item.pdfId}', '${item.name.replace(/'/g, "\\'")}')">
             <i class="fa-solid fa-file-pdf"></i>
@@ -1391,42 +1390,57 @@
       };
 
       records.unshift(newRecord);
-      newlyCreatedRecord = newRecord;
+      pdfTargetRecord = newRecord;
+      returnToTabAfterPdf = true;
       saveLocalRecords();
       populatePlaceFilter();
       document.getElementById('recordForm').reset();
 
       if (navigator.onLine) {
         showToast("Saving to Google Sheets...");
-        try {
-          await fetch(SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "add", record: newRecord })
+        pendingAddPromise = fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "add", record: newRecord })
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              showToast(`Saved to ${newRecord.status} Sheet!`);
+            } else {
+              alert("Sheet Save Error: " + (data.error || data.message));
+            }
+          })
+          .catch(() => {
+            addToSyncQueue("add", newRecord);
+            showToast("Network busy. Saved offline for auto-sync.");
           });
-          showToast(`Saved to ${newRecord.status} Sheet!`);
-        } catch (err) {
-          addToSyncQueue("add", newRecord);
-          showToast("Network busy. Saved offline for auto-sync.");
-        }
       } else {
+        pendingAddPromise = Promise.resolve();
         addToSyncQueue("add", newRecord);
         showToast("Saved offline. Will sync when back online!");
       }
 
-      // 4. Ask user if they want to add a PDF
       document.getElementById('askPdfModal').classList.add('open');
     }
 
     function declinePdfUpload() {
       document.getElementById('askPdfModal').classList.remove('open');
-      if (newlyCreatedRecord) {
-        switchTab(newlyCreatedRecord.status);
-        newlyCreatedRecord = null;
+      if (pdfTargetRecord && returnToTabAfterPdf) {
+        switchTab(pdfTargetRecord.status);
       }
+      pdfTargetRecord = null;
+      returnToTabAfterPdf = false;
     }
 
     function acceptPdfUpload() {
       document.getElementById('askPdfModal').classList.remove('open');
+      openPdfUploaderFor(pdfTargetRecord, returnToTabAfterPdf);
+    }
+
+    function openPdfUploaderFor(record, switchTabAfter) {
+      pdfTargetRecord = record;
+      returnToTabAfterPdf = switchTabAfter;
       document.getElementById('pdfFileInput').value = '';
       document.getElementById('pdfFileLabel').innerText = 'Tap to select PDF file';
       document.getElementById('pdfUploadModal').classList.add('open');
@@ -1434,22 +1448,30 @@
 
     function closePdfUploadModal() {
       document.getElementById('pdfUploadModal').classList.remove('open');
-      if (newlyCreatedRecord) {
-        switchTab(newlyCreatedRecord.status);
-        newlyCreatedRecord = null;
+      if (pdfTargetRecord && returnToTabAfterPdf) {
+        switchTab(pdfTargetRecord.status);
       }
+      pdfTargetRecord = null;
+      returnToTabAfterPdf = false;
     }
 
     function onPdfFileSelected(input) {
       if (input.files && input.files[0]) {
-        document.getElementById('pdfFileLabel').innerText = input.files[0].name;
+        const file = input.files[0];
+        if (file.size > 15 * 1024 * 1024) {
+          alert("File is too large (" + (file.size / 1024 / 1024).toFixed(1) + " MB). Please select a PDF under 15 MB.");
+          input.value = '';
+          document.getElementById('pdfFileLabel').innerText = 'Tap to select PDF file';
+          return;
+        }
+        document.getElementById('pdfFileLabel').innerText = file.name;
       }
     }
 
     async function handlePdfUploadSubmit(e) {
       e.preventDefault();
       const fileInput = document.getElementById('pdfFileInput');
-      if (!fileInput.files || !fileInput.files[0] || !newlyCreatedRecord) return;
+      if (!fileInput.files || !fileInput.files[0] || !pdfTargetRecord) return;
 
       if (!navigator.onLine) {
         alert("Internet connection is required to upload PDF to Google Sheets.");
@@ -1461,33 +1483,60 @@
       submitBtn.disabled = true;
       submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading PDF...`;
 
+      // Wait for the initial record row to finish saving before linking PDF ID
+      if (pendingAddPromise) {
+        try { await pendingAddPromise; } catch (_) {}
+      }
+
       const reader = new FileReader();
       reader.onload = async function() {
         try {
           const base64Data = reader.result.split(',')[1];
           const res = await fetch(SCRIPT_URL, {
             method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({
               action: "uploadPdf",
-              recordId: newlyCreatedRecord.id,
-              fileName: `${newlyCreatedRecord.fileNo.replace(/[\/\\]/g, '_')}_${newlyCreatedRecord.name}.pdf`,
+              recordId: pdfTargetRecord.id,
+              fileName: `${pdfTargetRecord.fileNo.replace(/[\/\\]/g, '_')}_${pdfTargetRecord.name}.pdf`,
               base64Data: base64Data
             })
           });
-          const result = await res.json();
+
+          const rawText = await res.text();
+          let result;
+          try {
+            result = JSON.parse(rawText);
+          } catch (parseErr) {
+            throw new Error("Apps Script returned an unexpected response. Make sure DriveApp permissions are authorized and a New Version is deployed.");
+          }
+
           if (result.success && result.pdfId) {
-            newlyCreatedRecord.pdfId = result.pdfId;
-            // Cache base64 locally for instant PDF.js viewing
+            pdfTargetRecord.pdfId = result.pdfId;
             try {
               localStorage.setItem('pdf_cache_' + result.pdfId, base64Data);
             } catch (quotaErr) {}
             saveLocalRecords();
+
+            // If Sheet didn't link during uploadPdf, sync full row now
+            if (!result.linkedToSheet) {
+              await fetch(SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ action: "update", record: pdfTargetRecord })
+              });
+            }
+
+            if (selectedRecord && selectedRecord.id === pdfTargetRecord.id) {
+              renderDetailsView();
+            }
+            renderList(currentTab);
             showToast("PDF uploaded & linked to Sheet!");
           } else {
-            showToast("PDF upload failed. Try again.");
+            alert("PDF Upload Failed: " + (result.error || result.message || "Unknown server error"));
           }
         } catch (err) {
-          showToast("Error uploading PDF.");
+          alert("Upload Error: " + err.message);
         } finally {
           submitBtn.disabled = false;
           submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Upload to Google Sheets`;
@@ -1551,7 +1600,6 @@
           <span class="val" style="text-align: left; font-weight: 500;">${selectedRecord.address}</span>
         </div>
 
-        <!-- 3. Route & Landmark with Font Awesome Edit Button -->
         <div class="detail-item" style="flex-direction: column; gap: 6px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span class="lbl">Route & Landmark:</span>
@@ -1562,13 +1610,21 @@
           <span class="val" style="text-align: left; font-weight: 500;">${selectedRecord.route}</span>
         </div>
 
-        ${selectedRecord.pdfId ? `
-          <div>
-            <button type="button" onclick="openPdfViewer('${selectedRecord.pdfId}', '${selectedRecord.name.replace(/'/g, "\\'")}')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: #fef2f2; color: #dc2626; border: 1.5px solid #fecaca; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 1.05rem; cursor: pointer;">
-              <i class="fa-solid fa-file-pdf" style="font-size: 20px;"></i> View Attached PDF
+        <!-- Attach, Replace, or View PDF from Details Page -->
+        <div style="display: flex; gap: 10px;">
+          ${selectedRecord.pdfId ? `
+            <button type="button" onclick="openPdfViewer('${selectedRecord.pdfId}', '${selectedRecord.name.replace(/'/g, "\\'")}')" style="flex: 1.4; display: flex; align-items: center; justify-content: center; gap: 8px; background: #fef2f2; color: #dc2626; border: 1.5px solid #fecaca; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer;">
+              <i class="fa-solid fa-file-pdf" style="font-size: 19px;"></i> View PDF
             </button>
-          </div>
-        ` : ''}
+            <button type="button" onclick="openPdfUploaderFor(selectedRecord, false)" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; background: #f8fafc; color: #334155; border: 1.5px solid #cbd5e1; padding: 14px; border-radius: 12px; font-weight: 600; font-size: 0.95rem; cursor: pointer;">
+              <i class="fa-solid fa-rotate"></i> Replace
+            </button>
+          ` : `
+            <button type="button" onclick="openPdfUploaderFor(selectedRecord, false)" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: #fef2f2; color: #dc2626; border: 1.5px dashed #fca5a5; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer;">
+              <i class="fa-solid fa-file-arrow-up" style="font-size: 19px;"></i> Attach PDF Document
+            </button>
+          `}
+        </div>
 
         ${selectedRecord.location ? `
           <div>
@@ -1585,7 +1641,6 @@
       `;
     }
 
-    // Route & Landmark Edit Modal Logic
     function openRouteEditModal() {
       if (!selectedRecord) return;
       document.getElementById('editRouteInput').value = selectedRecord.route || '';
@@ -1613,6 +1668,7 @@
         try {
           await fetch(SCRIPT_URL, {
             method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({ action: "update", record: selectedRecord })
           });
           showToast("Route & Landmark updated!");
@@ -1626,7 +1682,6 @@
       }
     }
 
-    // 5. PDF.js Viewer Functions
     async function openPdfViewer(pdfId, beneficiaryName) {
       const overlay = document.getElementById('pdfViewerOverlay');
       const statusEl = document.getElementById('pdfViewerStatus');
@@ -1781,6 +1836,7 @@
         try {
           await fetch(SCRIPT_URL, {
             method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({ action: "update", record: selectedRecord })
           });
           showToast(oldStatus !== newStatus ? `Successfully moved to ${newStatus}!` : "Updated successfully!");
